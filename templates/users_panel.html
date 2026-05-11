@@ -1,0 +1,522 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempus | Usuarios</title>
+    {% now "U" as asset_version %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'icons/logo-sena-white.svg' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v={{ asset_version }}">
+    <link rel="stylesheet" href="{% static 'css/users.css' %}?v={{ asset_version }}">
+    <script src="{% static 'js/dashboard.js' %}?v={{ asset_version }}" defer></script>
+</head>
+<body class="users-page">
+    <div class="sena-logo" aria-label="Logo SENA">
+        <img src="{% static 'icons/logo-sena.svg' %}" alt="Logo SENA">
+    </div>
+
+    <main class="dashboard-shell">
+        <header class="hero users-hero">
+            <h1>Usuarios del sistema</h1>
+        </header>
+
+        {% if messages %}
+            <ul class="message-list">
+                {% for message in messages %}
+                    <li class="message-item {{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <section class="users-kpi-grid" aria-label="Indicadores de usuarios">
+            <button type="button" class="users-kpi-card users-kpi-filter-btn users-kpi--dark" aria-label="Usuarios" data-tooltip="Usuarios" data-filter="all">
+                <span class="users-kpi-icon" aria-hidden="true" data-tooltip="Usuarios">
+                    <img src="{% static 'icons/user-circle-svgrepo-com.svg' %}" alt="">
+                </span>
+                <span class="users-kpi-value">{{ total_users }}</span>
+            </button>
+            <button type="button" class="users-kpi-card users-kpi-filter-btn users-kpi--green" aria-label="Contratistas" data-tooltip="Contratistas" data-filter="contratista">
+                <span class="users-kpi-icon" aria-hidden="true" data-tooltip="Contratistas">
+                    <img src="{% static 'icons/user-svgrepo-com.svg' %}" alt="">
+                </span>
+                <span class="users-kpi-value">{{ total_contractors }}</span>
+            </button>
+            <button type="button" class="users-kpi-card users-kpi-filter-btn users-kpi--teal" aria-label="Planta" data-tooltip="Planta" data-filter="planta">
+                <span class="users-kpi-icon" aria-hidden="true" data-tooltip="Planta">
+                    <img src="{% static 'icons/user-heart-rounded-svgrepo-com.svg' %}" alt="">
+                </span>
+                <span class="users-kpi-value">{{ total_plant }}</span>
+            </button>
+            <button type="button" class="users-kpi-card users-kpi-filter-btn users-kpi--blue" aria-label="Administradores" data-tooltip="Administradores" data-filter="administrador">
+                <span class="users-kpi-icon" aria-hidden="true" data-tooltip="Administradores">
+                    <img src="{% static 'icons/settings-svgrepo-com.svg' %}" alt="">
+                </span>
+                <span class="users-kpi-value">{{ total_admins }}</span>
+            </button>
+        </section>
+
+        <section class="users-actions">
+            <div class="users-action-menu" id="usersLoadMenu">
+                <button type="button" class="users-icon-action users-icon-action--upload users-load-toggle" id="usersLoadToggle" aria-label="Ver o cargar usuarios" data-tooltip="Ver o cargar usuarios" aria-expanded="false" aria-controls="usersLoadMenuOptions">
+                    <img src="{% static 'icons/upload-svgrepo-com.svg' %}" alt="">
+                </button>
+                <div class="users-action-menu-options" id="usersLoadMenuOptions" aria-hidden="true">
+                    <a class="users-icon-action users-icon-action--submenu users-icon-action--contractor" href="{% url 'users-upload' %}" data-spa="true" aria-label="Carga de contratistas" data-tooltip="Contratistas">
+                        <img src="{% static 'icons/user-plus-svgrepo-com.svg' %}" alt="">
+                    </a>
+                    <a class="users-icon-action users-icon-action--submenu users-icon-action--plant" href="{% url 'users-upload-plant' %}" data-spa="true" aria-label="Carga de planta" data-tooltip="Planta">
+                        <img src="{% static 'icons/user-heart-rounded-svgrepo-com.svg' %}" alt="">
+                    </a>
+                </div>
+            </div>
+            <form method="post" action="{% url 'users-delete-non-admin' %}" class="inline-form" id="deleteNonAdminUsersForm">
+                {% csrf_token %}
+                <button type="submit" class="users-icon-action users-icon-action--danger" aria-label="Borrar usuarios no admin" data-tooltip="Borrar usuarios no admin">
+                    <img src="{% static 'icons/user-cross-svgrepo-com.svg' %}" alt="">
+                </button>
+            </form>
+        </section>
+
+        <section class="users-table-card">
+            <div class="users-table-wrap">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre completo</th>
+                            <th>Correo</th>
+                            <th>Rol</th>
+                            <th>Documento</th>
+                            <th>Contrato</th>
+                            <th>Estado</th>
+                            <th>Ver</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in users_data %}
+                            <tr class="{% if row.is_current_admin %}users-row--current-admin{% endif %}" data-role="{{ row.role|lower }}">
+                                <td>
+                                    <div class="users-name-cell">
+                                        <strong class="users-name-main">
+                                            {% if row.contractor and row.contractor.full_name %}
+                                                {{ row.contractor.full_name }}
+                                            {% elif row.plant and row.plant.full_name %}
+                                                {{ row.plant.full_name }}
+                                            {% elif row.user.first_name or row.user.last_name %}
+                                                {{ row.user.get_full_name }}
+                                            {% else %}
+                                                &mdash;
+                                            {% endif %}
+                                        </strong>
+                                        {% if row.is_current_admin %}
+                                            <span class="users-owner-badge">Admin actual</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="users-email-cell">{{ row.user.email|default:"-" }}</td>
+                                <td><span class="users-role users-role--{{ row.role|lower }}">{{ row.role }}</span></td>
+                                <td>
+                                    {% if row.contractor %}
+                                        {{ row.contractor.document_number }}
+                                    {% elif row.plant %}
+                                        {{ row.plant.document_number }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if row.contractor %}
+                                        {{ row.contractor.contract_number }}
+                                    {% elif row.plant and row.plant.employee_number %}
+                                        {{ row.plant.employee_number }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="users-status-cell">
+                                        <span class="users-status {% if row.user.is_active %}users-status--active{% else %}users-status--inactive{% endif %}">
+                                            {% if row.user.is_active %}Activo{% else %}Inactivo{% endif %}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <button
+                                        type="button"
+                                        class="users-view-btn"
+                                        data-user-fullname="{% if row.contractor and row.contractor.full_name %}{{ row.contractor.full_name }}{% elif row.user.first_name %}{{ row.user.first_name }}{% else %}{{ row.user.get_username }}{% endif %}"
+                                        data-user-email="{{ row.user.email|default:'' }}"
+                                        data-user-role="{{ row.role|default:'' }}"
+                                        data-user-document="{% if row.contractor %}{{ row.contractor.document_number|default:'' }}{% elif row.plant %}{{ row.plant.document_number|default:'' }}{% endif %}"
+                                        data-user-contract="{% if row.contractor %}{{ row.contractor.contract_number|default:'' }}{% elif row.plant %}{{ row.plant.employee_number|default:'' }}{% endif %}"
+                                        data-user-coordination="{% if row.contractor %}{{ row.contractor.coordination|default:'' }}{% elif row.plant %}{{ row.plant.area|default:'' }}{% endif %}"
+                                        data-user-modality="{% if row.contractor %}{{ row.contractor.modality|default:'' }}{% endif %}"
+                                        data-user-level="{% if row.contractor %}{{ row.contractor.education_level|default:'' }}{% elif row.plant %}Planta{% endif %}"
+                                        data-user-undergraduate="{% if row.contractor %}{{ row.contractor.undergraduate|default:'' }}{% endif %}"
+                                        data-user-postgraduate="{% if row.contractor %}{{ row.contractor.postgraduate|default:'' }}{% endif %}"
+                                        data-user-specialty="{% if row.contractor %}{{ row.contractor.specialty|default:'' }}{% elif row.plant %}{{ row.plant.studies|default:'' }}{% endif %}"
+                                        data-user-start="{% if row.contractor and row.contractor.contract_start_date %}{{ row.contractor.contract_start_date|date:'Y-m-d' }}{% endif %}"
+                                        data-user-end="{% if row.contractor and row.contractor.contract_end_date %}{{ row.contractor.contract_end_date|date:'Y-m-d' }}{% endif %}"
+                                    >Ver</button>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr class="users-empty-row users-empty-row--all">
+                            <td colspan="7">No hay usuarios registrados.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="usersFilterEmptyPanel" class="users-filter-empty-panel" style="display: none;" aria-live="polite">
+            <p class="users-filter-empty-title" id="usersFilterEmptyText">No hay usuario con este rol registrado.</p>
+            <p class="users-filter-empty-copy">Registra tus usuarios</p>
+        </section>
+
+        <section class="users-detail-shell" id="usersDetailShell" aria-hidden="true">
+            <div class="users-detail-card">
+                <header class="users-detail-head">
+                    <div>
+                        <p class="users-detail-eyebrow">Detalle del usuario</p>
+                        <h2 id="detailFullName">Sin selección</h2>
+                    </div>
+                    <button type="button" class="users-detail-close" id="usersDetailClose" aria-label="Cerrar detalle">Cerrar</button>
+                </header>
+
+                <div class="users-detail-grid">
+                    <article class="users-detail-block">
+                        <h3>Datos básicos</h3>
+                        <div class="users-detail-fields">
+                            <div><span>Correo</span><strong id="detailEmail">-</strong></div>
+                            <div><span>Documento</span><strong id="detailDocument">-</strong></div>
+                            <div><span>Rol</span><strong id="detailRole">-</strong></div>
+                            <div><span>N° de contrato</span><strong id="detailContract">-</strong></div>
+                        </div>
+                    </article>
+
+                    <article class="users-detail-block">
+                        <h3>Vinculación</h3>
+                        <div class="users-detail-fields">
+                            <div><span>Coordinación</span><strong id="detailCoordination">-</strong></div>
+                            <div><span>Modalidad</span><strong id="detailModality">-</strong></div>
+                            <div><span>Inicio contrato</span><strong id="detailStart">-</strong></div>
+                            <div><span>Fin contrato</span><strong id="detailEnd">-</strong></div>
+                        </div>
+                    </article>
+
+                    <article class="users-detail-block users-detail-block--full">
+                        <h3>Formación</h3>
+                        <div class="users-detail-fields users-detail-fields--columns">
+                            <div><span>Nivel</span><strong id="detailLevel">-</strong></div>
+                            <div><span>Pregrado</span><strong id="detailUndergraduate">-</strong></div>
+                            <div><span>Posgrado</span><strong id="detailPostgraduate">-</strong></div>
+                            <div><span>Especialidad / Área CIDE</span><strong id="detailSpecialty">-</strong></div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="users-confirm-shell" id="usersDeleteConfirmShell" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="usersDeleteConfirmTitle">
+            <article class="users-confirm-card">
+                <h3 id="usersDeleteConfirmTitle">Eliminar usuarios no administradores</h3>
+                <p class="users-confirm-copy">
+                    ¿Eliminar todos los usuarios no administradores?<br><br>
+                    Se borrarán en cascada sus perfiles y datos relacionados.<br>
+                    Los administradores y roles registrados se conservarán.<br><br>
+                    Esta acción no se puede deshacer.
+                </p>
+                <div class="users-confirm-actions">
+                    <button type="button" class="users-confirm-btn users-confirm-btn--cancel" id="usersDeleteCancel">Cancelar</button>
+                    <button type="button" class="users-confirm-btn users-confirm-btn--accept" id="usersDeleteAccept">Eliminar</button>
+                </div>
+            </article>
+        </section>
+
+        <script>
+        (function () {
+            const detailShell = document.getElementById("usersDetailShell");
+            const closeBtn = document.getElementById("usersDetailClose");
+            const viewButtons = Array.from(document.querySelectorAll(".users-view-btn"));
+            const deleteForm = document.getElementById("deleteNonAdminUsersForm");
+            const loadMenu = document.getElementById("usersLoadMenu");
+            const loadToggle = document.getElementById("usersLoadToggle");
+            const kpiFilterButtons = Array.from(document.querySelectorAll(".users-kpi-filter-btn"));
+            const usersRows = Array.from(document.querySelectorAll(".users-table tbody tr[data-role]"));
+            const usersTableCard = document.querySelector(".users-table-card");
+            const filterEmptyPanel = document.getElementById("usersFilterEmptyPanel");
+            const filterEmptyText = document.getElementById("usersFilterEmptyText");
+            const allEmptyRow = document.querySelector(".users-empty-row--all");
+            const deleteConfirmShell = document.getElementById("usersDeleteConfirmShell");
+            const deleteConfirmAccept = document.getElementById("usersDeleteAccept");
+            const deleteConfirmCancel = document.getElementById("usersDeleteCancel");
+
+            function openDeleteConfirm() {
+                if (!deleteConfirmShell) {
+                    return;
+                }
+
+                deleteConfirmShell.classList.add("open");
+                deleteConfirmShell.setAttribute("aria-hidden", "false");
+            }
+
+            function closeDeleteConfirm() {
+                if (!deleteConfirmShell) {
+                    return;
+                }
+
+                deleteConfirmShell.classList.remove("open");
+                deleteConfirmShell.setAttribute("aria-hidden", "true");
+            }
+
+            function applyRoleFilter(filterValue) {
+                if (!kpiFilterButtons.length) {
+                    return;
+                }
+
+                kpiFilterButtons.forEach((button) => {
+                    const card = button.closest(".users-kpi-card");
+                    const isActive = button.dataset.filter === filterValue;
+                    button.classList.toggle("is-active", isActive);
+                    if (card) {
+                        card.classList.toggle("is-active", isActive);
+                    }
+                });
+
+                let visibleCount = 0;
+
+                usersRows.forEach((row) => {
+                    const rowRole = (row.dataset.role || "").toLowerCase();
+                    const show = filterValue === "all" || rowRole === filterValue;
+                    row.style.display = show ? "" : "none";
+                    if (show) {
+                        visibleCount += 1;
+                    }
+                });
+
+                if (allEmptyRow) {
+                    allEmptyRow.style.display = filterValue === "all" ? "" : "none";
+                }
+
+                if (!filterEmptyPanel || !filterEmptyText || !usersTableCard) {
+                    return;
+                }
+
+                const activeButton = kpiFilterButtons.find((button) => {
+                    return (button.dataset.filter || "").toLowerCase() === filterValue;
+                });
+
+                const roleLabel = (activeButton?.dataset.tooltip || filterValue || "rol").trim();
+                if (filterValue !== "all" && visibleCount === 0) {
+                    filterEmptyText.textContent = `No hay usuarios ${roleLabel} registrados.`;
+                    usersTableCard.style.display = "none";
+                    filterEmptyPanel.style.display = "grid";
+                } else {
+                    usersTableCard.style.display = "";
+                    filterEmptyPanel.style.display = "none";
+                }
+            }
+
+            if (kpiFilterButtons.length) {
+                kpiFilterButtons.forEach((button) => {
+                    button.addEventListener("click", () => {
+                        button.classList.remove("users-kpi-jump");
+                        void button.offsetWidth;
+                        button.classList.add("users-kpi-jump");
+                        applyRoleFilter((button.dataset.filter || "all").toLowerCase());
+                    });
+                });
+
+                applyRoleFilter("all");
+            }
+
+            function closeLoadMenu() {
+                if (!loadMenu || !loadToggle) {
+                    return;
+                }
+
+                loadMenu.classList.remove("open");
+                loadToggle.setAttribute("aria-expanded", "false");
+                const options = document.getElementById("usersLoadMenuOptions");
+                if (options) {
+                    options.setAttribute("aria-hidden", "true");
+                }
+            }
+
+            function openLoadMenu() {
+                if (!loadMenu || !loadToggle) {
+                    return;
+                }
+
+                loadMenu.classList.add("open");
+                loadToggle.setAttribute("aria-expanded", "true");
+                const options = document.getElementById("usersLoadMenuOptions");
+                if (options) {
+                    options.setAttribute("aria-hidden", "false");
+                }
+            }
+
+            if (loadMenu && loadToggle) {
+                loadToggle.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    if (loadMenu.classList.contains("open")) {
+                        closeLoadMenu();
+                    } else {
+                        openLoadMenu();
+                    }
+                });
+
+                document.addEventListener("click", function (event) {
+                    if (!loadMenu.contains(event.target)) {
+                        closeLoadMenu();
+                    }
+                });
+
+                document.addEventListener("keydown", function (event) {
+                    if (event.key === "Escape") {
+                        closeLoadMenu();
+                    }
+                });
+            }
+
+            const fields = {
+                fullName: document.getElementById("detailFullName"),
+                email: document.getElementById("detailEmail"),
+                role: document.getElementById("detailRole"),
+                document: document.getElementById("detailDocument"),
+                contract: document.getElementById("detailContract"),
+                coordination: document.getElementById("detailCoordination"),
+                modality: document.getElementById("detailModality"),
+                start: document.getElementById("detailStart"),
+                end: document.getElementById("detailEnd"),
+                level: document.getElementById("detailLevel"),
+                undergraduate: document.getElementById("detailUndergraduate"),
+                postgraduate: document.getElementById("detailPostgraduate"),
+                specialty: document.getElementById("detailSpecialty"),
+            };
+
+            if (deleteForm) {
+                deleteForm.addEventListener("submit", function (event) {
+                    if (deleteForm.dataset.confirmed === "1") {
+                        deleteForm.dataset.confirmed = "0";
+                        return;
+                    }
+
+                    event.preventDefault();
+                    openDeleteConfirm();
+                });
+            }
+
+            if (deleteConfirmCancel) {
+                deleteConfirmCancel.addEventListener("click", closeDeleteConfirm);
+            }
+
+            if (deleteConfirmAccept && deleteForm) {
+                deleteConfirmAccept.addEventListener("click", function () {
+                    deleteForm.dataset.confirmed = "1";
+                    closeDeleteConfirm();
+                    deleteForm.requestSubmit();
+                });
+            }
+
+            if (deleteConfirmShell) {
+                deleteConfirmShell.addEventListener("click", function (event) {
+                    if (event.target === deleteConfirmShell) {
+                        closeDeleteConfirm();
+                    }
+                });
+            }
+
+            if (!detailShell || !closeBtn || viewButtons.length === 0) {
+                return;
+            }
+
+            function normalize(value) {
+                const text = (value || "").trim();
+                return text || "-";
+            }
+
+            function openDetail(data) {
+                fields.fullName.textContent = normalize(data.userFullname);
+                fields.email.textContent = normalize(data.userEmail);
+                fields.role.textContent = normalize(data.userRole);
+                fields.document.textContent = normalize(data.userDocument);
+                fields.contract.textContent = normalize(data.userContract);
+                fields.coordination.textContent = normalize(data.userCoordination);
+                fields.modality.textContent = normalize(data.userModality);
+                fields.start.textContent = normalize(data.userStart);
+                fields.end.textContent = normalize(data.userEnd);
+                fields.level.textContent = normalize(data.userLevel);
+                fields.undergraduate.textContent = normalize(data.userUndergraduate);
+                fields.postgraduate.textContent = normalize(data.userPostgraduate);
+                fields.specialty.textContent = normalize(data.userSpecialty);
+
+                detailShell.classList.add("open");
+                detailShell.setAttribute("aria-hidden", "false");
+            }
+
+            function closeDetail() {
+                detailShell.classList.remove("open");
+                detailShell.setAttribute("aria-hidden", "true");
+            }
+
+            viewButtons.forEach((btn) => {
+                btn.addEventListener("click", () => openDetail(btn.dataset));
+            });
+
+            closeBtn.addEventListener("click", closeDetail);
+            detailShell.addEventListener("click", (event) => {
+                if (event.target === detailShell) {
+                    closeDetail();
+                }
+            });
+
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "Escape") {
+                    closeDeleteConfirm();
+                    closeDetail();
+                }
+            });
+        })();
+        </script>
+    </main>
+
+    <nav class="navigation" aria-label="Navegacion principal">
+        <ul>
+            <li class="list {% if active_tab == 'inicio' %}active{% endif %}">
+                <a href="{% url 'dashboard' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/home-smile-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Inicio</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/magnifer-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Buscar</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'crear' %}active{% endif %}">
+                <a href="{% url 'matrix-upload' %}" data-spa="true" data-fab-toggle="true" aria-expanded="false">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/add-circle-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Cargar</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/bell-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Alertas</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'perfil' %}active{% endif %}">
+                <a href="{% url 'profile' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/user-circle-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Perfil</span>
+                </a>
+            </li>
+            <div class="indicator"></div>
+        </ul>
+    </nav>
+</body>
+</html>

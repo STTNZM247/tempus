@@ -1,0 +1,210 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempus | Matrices</title>
+    {% now "U" as asset_version %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'icons/logo-sena-white.svg' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v={{ asset_version }}">
+    <link rel="stylesheet" href="{% static 'css/matrix_list.css' %}?v={{ asset_version }}">
+    <script src="{% static 'js/dashboard.js' %}?v={{ asset_version }}" defer></script>
+</head>
+<body class="matrix-list-page">
+    <div class="sena-logo" aria-label="Logo SENA">
+        <img src="{% static 'icons/logo-sena.svg' %}" alt="Logo SENA">
+    </div>
+
+    <main class="dashboard-shell">
+        <header class="hero">
+            <p class="eyebrow">Programas registrados</p>
+            <h1>Matrices cargadas</h1>
+            <p class="hero-copy">
+                Consulta todos los programas de formación con sus competencias, resultados y cantidad de trimestres del programa.
+            </p>
+        </header>
+
+        {% if messages %}
+            <ul class="message-list">
+                {% for message in messages %}
+                    <li class="message-item {{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        {% if matrices %}
+            <div class="mlist-toolbar">
+                <span class="mlist-total">{{ matrices|length }} programa{% if matrices|length != 1 %}s{% endif %}</span>
+                <input id="mlistSearch" class="mlist-search" type="search" placeholder="Buscar programa o código...">
+            </div>
+
+            <div class="mlist-grid" id="mlistGrid">
+                {% for item in matrices %}
+                    <article
+                        class="mlist-card mlist-card--clickable"
+                        data-search="{{ item.matrix.program_name|lower }} {{ item.matrix.program_code|lower }} {{ item.matrix.project_code|lower }}"
+                        data-href="{% url 'matrix-detail' item.matrix.pk %}"
+                    >
+                        <div class="mlist-card-header">
+                            <span class="mlist-badge">
+                                {% if item.max_trimester %}
+                                    {{ item.max_trimester }} trimestre{% if item.max_trimester != 1 %}s{% endif %}
+                                {% else %}
+                                    Sin trimestre
+                                {% endif %}
+                            </span>
+                            <span class="mlist-date">{{ item.matrix.created_at|date:"d/m/Y" }}</span>
+                        </div>
+
+                        <h2 class="mlist-program-name">{{ item.matrix.program_name }}</h2>
+                        <p class="mlist-project-desc">{{ item.matrix.project_description|truncatechars:90 }}</p>
+
+                        <div class="mlist-meta">
+                            <div class="mlist-meta-item">
+                                <span class="mlist-meta-label">Código</span>
+                                <span class="mlist-meta-value">{{ item.matrix.program_code }}</span>
+                            </div>
+                            <div class="mlist-meta-item">
+                                <span class="mlist-meta-label">Proyecto</span>
+                                <span class="mlist-meta-value">{{ item.matrix.project_code }}</span>
+                            </div>
+                            <div class="mlist-meta-item">
+                                <span class="mlist-meta-label">Versión</span>
+                                <span class="mlist-meta-value">{{ item.matrix.version|default:"-" }}</span>
+                            </div>
+                            <div class="mlist-meta-item">
+                                <span class="mlist-meta-label">Nivel</span>
+                                <span class="mlist-meta-value">{{ item.matrix.level|default:"-" }}</span>
+                            </div>
+                        </div>
+
+                        <div class="mlist-stats">
+                            <div class="mlist-stat">
+                                <span class="mlist-stat-num">{{ item.matrix.competency_count }}</span>
+                                <span class="mlist-stat-lbl">competencias</span>
+                            </div>
+                            <div class="mlist-stat-divider"></div>
+                            <div class="mlist-stat">
+                                <span class="mlist-stat-num">{{ item.matrix.result_count }}</span>
+                                <span class="mlist-stat-lbl">resultados</span>
+                            </div>
+                            {% if item.max_trimester %}
+                                <div class="mlist-stat-divider"></div>
+                                <div class="mlist-stat">
+                                    <span class="mlist-stat-num mlist-trimester-num">{{ item.max_trimester }}</span>
+                                    <span class="mlist-stat-lbl">trimestres</span>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mlist-card-footer">
+                            {% if item.matrix.uploaded_by %}
+                                <span class="mlist-uploader">Subido por {{ item.matrix.uploaded_by.get_username }}</span>
+                            {% endif %}
+                            <form method="post" action="{% url 'matrix-delete' item.matrix.pk %}" class="mlist-delete-form">
+                                {% csrf_token %}
+                                <button
+                                    type="button"
+                                    class="mlist-delete-btn"
+                                    data-program="{{ item.matrix.program_name|escapejs }}"
+                                    data-results="{{ item.matrix.result_count }}"
+                                    data-competencies="{{ item.matrix.competency_count }}"
+                                >
+                                    Eliminar
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+
+            <script>
+                (function () {
+                    const input = document.getElementById("mlistSearch");
+                    const cards = Array.from(document.querySelectorAll(".mlist-card"));
+                    if (!input || cards.length === 0) return;
+
+                    input.addEventListener("input", function () {
+                        const term = input.value.trim().toLowerCase();
+                        cards.forEach(function (card) {
+                            const match = !term || (card.dataset.search || "").includes(term);
+                            card.style.display = match ? "" : "none";
+                        });
+                    });
+                })();
+
+                // Navegar al detalle al clicar la tarjeta
+                document.querySelectorAll(".mlist-card--clickable").forEach(function (card) {
+                    card.addEventListener("click", function (event) {
+                        if (event.target.closest(".mlist-delete-form")) return;
+                        const href = card.dataset.href;
+                        if (href) window.location.href = href;
+                    });
+                });
+
+                // Confirmación de eliminación
+                document.querySelectorAll(".mlist-delete-btn").forEach(function (btn) {
+                    btn.addEventListener("click", function () {
+                        const program = btn.dataset.program;
+                        const results = btn.dataset.results;
+                        const competencies = btn.dataset.competencies;
+                        const confirmed = window.confirm(
+                            "¿Eliminar la matriz \"" + program + "\"?\n\n" +
+                            "Se borrarán permanentemente:\n" +
+                            "  • " + competencies + " competencias\n" +
+                            "  • " + results + " resultados de aprendizaje\n\n" +
+                            "Esta acción no se puede deshacer."
+                        );
+                        if (confirmed) {
+                            btn.closest("form").submit();
+                        }
+                    });
+                });
+            </script>
+        {% else %}
+            <div class="mlist-empty">
+                <p class="mlist-empty-title">Aún no hay matrices registradas</p>
+                <p class="mlist-empty-copy">Carga el primer Excel de matriz para verlo aquí.</p>
+                <a class="primary-btn" href="{% url 'matrix-upload' %}" data-spa="true">Cargar matriz</a>
+            </div>
+        {% endif %}
+    </main>
+
+    <nav class="navigation" aria-label="Navegacion principal">
+        <ul>
+            <li class="list {% if active_tab == 'inicio' %}active{% endif %}">
+                <a href="{% url 'dashboard' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/home-smile-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Inicio</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/magnifer-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Buscar</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'crear' %}active{% endif %}">
+                <a href="{% url 'matrix-upload' %}" data-spa="true" data-fab-toggle="true" aria-expanded="false">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/add-circle-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Cargar</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/bell-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Alertas</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'perfil' %}active{% endif %}">
+                <a href="{% url 'profile' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/user-circle-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Perfil</span>
+                </a>
+            </li>
+            <div class="indicator"></div>
+        </ul>
+    </nav>
+</body>
+</html>

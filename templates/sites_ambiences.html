@@ -1,0 +1,330 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempus | Sedes y Ambientes</title>
+    {% now "U" as asset_version %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'icons/logo-sena-white.svg' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v={{ asset_version }}">
+    <link rel="stylesheet" href="{% static 'css/sites_ambiences.css' %}?v={{ asset_version }}">
+    <script src="{% static 'js/dashboard.js' %}?v={{ asset_version }}" defer></script>
+</head>
+<body>
+    <div class="sena-logo" aria-label="Logo SENA">
+        <img src="{% static 'icons/logo-sena.svg' %}" alt="Logo SENA">
+    </div>
+
+    <main class="dashboard-shell">
+        <header class="hero sa-hero">
+            <p class="eyebrow">Infraestructura</p>
+            <h1>Sedes y ambientes</h1>
+            <p class="hero-copy">Registra las sedes y organiza los ambientes por cada una.</p>
+        </header>
+
+        {% if messages %}
+            <div class="message-list" role="status" aria-live="polite">
+                {% for message in messages %}
+                    <article class="message-item {{ message.tags|default:'info' }}">
+                        <div>
+                            <strong>
+                                {% if message.tags == 'success' %}Exito{% elif message.tags == 'error' %}Error{% else %}Info{% endif %}
+                            </strong>
+                            <p>{{ message }}</p>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <section class="sa-kpis" aria-label="Resumen de infraestructura">
+            <article class="sa-kpi-card">
+                <span class="sa-kpi-label">Sedes registradas</span>
+                <span class="sa-kpi-value">{{ total_sedes }}</span>
+            </article>
+            <article class="sa-kpi-card">
+                <span class="sa-kpi-label">Ambientes creados</span>
+                <span class="sa-kpi-value">{{ total_ambientes }}</span>
+            </article>
+        </section>
+
+        <section class="sa-actions" aria-label="Acciones rapidas">
+            <button class="sa-action-btn sa-action-btn--sede" type="button" data-open-modal="modal-create-sede" data-tooltip="Crear sede">
+                <img class="sa-action-icon" src="{% static 'icons/map-point-add-svgrepo-com.svg' %}" alt="">
+                <span class="sa-action-text">Crear sede</span>
+            </button>
+            <button class="sa-action-btn sa-action-btn--ambiente" type="button" data-open-modal="modal-create-ambiente" data-tooltip="Crear ambiente">
+                <img class="sa-action-icon" src="{% static 'icons/map-point-school-svgrepo-com.svg' %}" alt="">
+                <span class="sa-action-text">Crear ambiente</span>
+            </button>
+        </section>
+
+        <!-- Modal crear sede -->
+        <div class="sa-modal" id="modal-create-sede" aria-hidden="true">
+            <div class="sa-modal-backdrop" data-close-modal></div>
+            <article class="sa-modal-card" role="dialog" aria-modal="true" aria-label="Crear nueva sede">
+                <header class="sa-modal-header">
+                    <h3>Crear sede</h3>
+                    <button type="button" class="sa-modal-close" data-close-modal aria-label="Cerrar">×</button>
+                </header>
+                <form method="post" action="{% url 'sites-ambiences' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_sede">
+                    <div class="sa-form-group">
+                        <label for="form-sede-nombre">Nombre de la sede</label>
+                        <input id="form-sede-nombre" name="nombre" type="text" maxlength="180" required>
+                    </div>
+                    <div class="sa-form-group">
+                        <label for="form-sede-ubicacion">Direccion</label>
+                        <input id="form-sede-ubicacion" name="ubicacion" type="text" maxlength="255" required>
+                    </div>
+                    <div class="sa-form-actions">
+                        <button class="sa-btn sa-btn--primary" type="submit">Registrar sede</button>
+                        <button class="sa-btn sa-btn--secondary" type="button" data-close-modal>Cancelar</button>
+                    </div>
+                </form>
+            </article>
+        </div>
+
+        <!-- Modal crear ambiente -->
+        <div class="sa-modal" id="modal-create-ambiente" aria-hidden="true">
+            <div class="sa-modal-backdrop" data-close-modal></div>
+            <article class="sa-modal-card" role="dialog" aria-modal="true" aria-label="Crear nuevo ambiente">
+                <header class="sa-modal-header">
+                    <h3>Crear ambiente</h3>
+                    <button type="button" class="sa-modal-close" data-close-modal aria-label="Cerrar">×</button>
+                </header>
+                <form method="post" action="{% url 'sites-ambiences' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_ambiente">
+                    <div class="sa-form-group">
+                        <label for="form-ambiente-sede">Sede</label>
+                        <select id="form-ambiente-sede" name="sede_id" required>
+                            <option value="">Selecciona una sede</option>
+                            {% for sede in sedes %}
+                                <option value="{{ sede.id }}">{{ sede.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="sa-form-group">
+                        <label for="form-ambiente-nombre">Nombre del ambiente</label>
+                        <input id="form-ambiente-nombre" name="nombre_ambiente" type="text" maxlength="180" required>
+                    </div>
+                    <div class="sa-form-group">
+                        <label for="form-ambiente-descripcion">Descripcion o categoria</label>
+                        <input id="form-ambiente-descripcion" name="descripcion" type="text" maxlength="255" placeholder="Ej: Laboratorio de redes, Aula teorica...">
+                    </div>
+                    <div class="sa-form-actions">
+                        <button class="sa-btn sa-btn--primary" type="submit">Crear ambiente</button>
+                        <button class="sa-btn sa-btn--secondary" type="button" data-close-modal>Cancelar</button>
+                    </div>
+                </form>
+            </article>
+        </div>
+
+        <section class="sa-sedes" aria-label="Listado de sedes">
+            {% if sedes %}
+                <div class="sa-sedes-grid">
+                    {% for sede in sedes %}
+                        <article class="sa-sede-card">
+                            <div class="sa-card-header">
+                                <div>
+                                    <h3>{{ sede.nombre }}</h3>
+                                    <p><strong>Direccion:</strong> {{ sede.ubicacion }}</p>
+                                    <p><strong>Ambientes:</strong> {{ sede.ambientes.count }}</p>
+                                </div>
+                                <button class="sa-icon-btn" type="button" data-open-modal="edit-sede-modal-{{ sede.id }}" aria-label="Editar sede {{ sede.nombre }}">
+                                    Editar
+                                </button>
+                            </div>
+                            <div class="sa-card-actions">
+                                <button class="sa-btn sa-btn--secondary" type="button" data-open-modal="sede-modal-{{ sede.id }}">
+                                    Ver ambientes
+                                </button>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <article class="sa-empty-state">
+                    <h3>Aun no hay sedes registradas</h3>
+                    <p>Crea tu primera sede para comenzar a organizar ambientes.</p>
+                </article>
+            {% endif %}
+        </section>
+
+        {% for sede in sedes %}
+            <div class="sa-modal" id="edit-sede-modal-{{ sede.id }}" aria-hidden="true">
+                <div class="sa-modal-backdrop" data-close-modal></div>
+                <article class="sa-modal-card sa-modal-card--compact" role="dialog" aria-modal="true" aria-label="Editar sede {{ sede.nombre }}">
+                    <header class="sa-modal-header">
+                        <h3>Editar sede</h3>
+                        <button type="button" class="sa-modal-close" data-close-modal aria-label="Cerrar">×</button>
+                    </header>
+                    <form method="post" action="{% url 'sites-ambiences' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_sede">
+                        <input type="hidden" name="sede_id" value="{{ sede.id }}">
+                        <div class="sa-form-group">
+                            <label for="edit-sede-nombre-{{ sede.id }}">Nombre de la sede</label>
+                            <input id="edit-sede-nombre-{{ sede.id }}" name="nombre" type="text" maxlength="180" value="{{ sede.nombre }}" required>
+                        </div>
+                        <div class="sa-form-group">
+                            <label for="edit-sede-ubicacion-{{ sede.id }}">Direccion</label>
+                            <input id="edit-sede-ubicacion-{{ sede.id }}" name="ubicacion" type="text" maxlength="255" value="{{ sede.ubicacion }}" required>
+                        </div>
+                        <div class="sa-form-actions">
+                            <button class="sa-btn sa-btn--primary" type="submit">Guardar cambios</button>
+                            <button class="sa-btn sa-btn--secondary" type="button" data-close-modal>Cancelar</button>
+                        </div>
+                    </form>
+                </article>
+            </div>
+
+            <div class="sa-modal" id="sede-modal-{{ sede.id }}" aria-hidden="true">
+                <div class="sa-modal-backdrop" data-close-modal></div>
+                <article class="sa-modal-card" role="dialog" aria-modal="true" aria-label="Ambientes de {{ sede.nombre }}">
+                    <header class="sa-modal-header">
+                        <h3>{{ sede.nombre }}</h3>
+                        <button type="button" class="sa-modal-close" data-close-modal aria-label="Cerrar">×</button>
+                    </header>
+                    <p class="sa-modal-subtitle">{{ sede.ubicacion }}</p>
+
+                    {% if sede.ambientes.all %}
+                        <ul class="sa-ambientes-list">
+                            {% for ambiente in sede.ambientes.all %}
+                                <li>
+                                    <div class="sa-ambiente-head">
+                                        <strong>{{ ambiente.nombre }}</strong>
+                                        <button class="sa-icon-btn sa-icon-btn--small" type="button" data-open-modal="edit-ambiente-modal-{{ ambiente.id }}" aria-label="Editar ambiente {{ ambiente.nombre }}">
+                                            Editar
+                                        </button>
+                                    </div>
+                                    <span>{{ ambiente.descripcion|default:"Sin descripcion" }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="sa-modal-empty">Esta sede aun no tiene ambientes registrados.</p>
+                    {% endif %}
+                </article>
+            </div>
+
+            {% for ambiente in sede.ambientes.all %}
+                <div class="sa-modal" id="edit-ambiente-modal-{{ ambiente.id }}" aria-hidden="true">
+                    <div class="sa-modal-backdrop" data-close-modal></div>
+                    <article class="sa-modal-card sa-modal-card--compact" role="dialog" aria-modal="true" aria-label="Editar ambiente {{ ambiente.nombre }}">
+                        <header class="sa-modal-header">
+                            <h3>Editar ambiente</h3>
+                            <button type="button" class="sa-modal-close" data-close-modal aria-label="Cerrar">×</button>
+                        </header>
+                        <form method="post" action="{% url 'sites-ambiences' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="update_ambiente">
+                            <input type="hidden" name="ambiente_id" value="{{ ambiente.id }}">
+                            <div class="sa-form-group">
+                                <label for="edit-ambiente-sede-{{ ambiente.id }}">Sede</label>
+                                <select id="edit-ambiente-sede-{{ ambiente.id }}" name="sede_id" required>
+                                    {% for sede_option in sedes %}
+                                        <option value="{{ sede_option.id }}" {% if sede_option.id == ambiente.sede_id %}selected{% endif %}>{{ sede_option.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="sa-form-group">
+                                <label for="edit-ambiente-nombre-{{ ambiente.id }}">Nombre del ambiente</label>
+                                <input id="edit-ambiente-nombre-{{ ambiente.id }}" name="nombre_ambiente" type="text" maxlength="180" value="{{ ambiente.nombre }}" required>
+                            </div>
+                            <div class="sa-form-group">
+                                <label for="edit-ambiente-descripcion-{{ ambiente.id }}">Descripcion o categoria</label>
+                                <input id="edit-ambiente-descripcion-{{ ambiente.id }}" name="descripcion" type="text" maxlength="255" value="{{ ambiente.descripcion }}" placeholder="Ej: Laboratorio de redes, Aula teorica...">
+                            </div>
+                            <div class="sa-form-actions">
+                                <button class="sa-btn sa-btn--primary" type="submit">Guardar cambios</button>
+                                <button class="sa-btn sa-btn--secondary" type="button" data-close-modal>Cancelar</button>
+                            </div>
+                        </form>
+                    </article>
+                </div>
+            {% endfor %}
+        {% endfor %}
+    </main>
+
+    <nav class="navigation" aria-label="Navegacion principal">
+        <ul>
+            <li class="list {% if active_tab == 'inicio' %}active{% endif %}">
+                <a href="{% url 'dashboard' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/home-smile-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Inicio</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/magnifer-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Buscar</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'crear' %}active{% endif %}">
+                <a href="{% url 'matrix-upload' %}" data-spa="true" data-fab-toggle="true" aria-expanded="false">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/add-circle-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Cargar</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/bell-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Alertas</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'perfil' %}active{% endif %}">
+                <a href="{% url 'profile' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/user-circle-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Perfil</span>
+                </a>
+            </li>
+            <div class="indicator"></div>
+        </ul>
+    </nav>
+
+    <script>
+        (function () {
+            document.querySelectorAll('[data-open-modal]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var id = btn.getAttribute('data-open-modal');
+                    var modal = document.getElementById(id);
+                    if (!modal) return;
+                    modal.classList.add('is-open');
+                    modal.setAttribute('aria-hidden', 'false');
+                });
+            });
+
+            document.querySelectorAll('.sa-modal').forEach(function (modal) {
+                modal.addEventListener('click', function (event) {
+                    if (event.target.hasAttribute('data-close-modal')) {
+                        modal.classList.remove('is-open');
+                        modal.setAttribute('aria-hidden', 'true');
+                    }
+                });
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key !== 'Escape') return;
+                document.querySelectorAll('.sa-modal.is-open').forEach(function (modal) {
+                    modal.classList.remove('is-open');
+                    modal.setAttribute('aria-hidden', 'true');
+                });
+            });
+        }());
+    </script>
+</body>
+</html>

@@ -1,0 +1,276 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempus | Carga Matriz</title>
+    {% now "U" as asset_version %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'icons/logo-sena-white.svg' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v={{ asset_version }}">
+    <link rel="stylesheet" href="{% static 'css/matrix.css' %}?v={{ asset_version }}">
+    <script src="{% static 'js/dashboard.js' %}?v={{ asset_version }}" defer></script>
+</head>
+<body class="matrix-page">
+    <div class="sena-logo" aria-label="Logo SENA">
+        <img src="{% static 'icons/logo-sena.svg' %}" alt="Logo SENA">
+    </div>
+
+    <main class="dashboard-shell">
+        <header class="hero">
+            <p class="eyebrow">Matriz Extendida</p>
+            <h1>Cargar Excel de matriz</h1>
+            <p class="hero-copy">
+                El sistema toma celdas combinadas, arrastra sus valores al bloque correcto y omite las filas sin datos utiles.
+            </p>
+        </header>
+
+        {% if messages %}
+            <ul class="message-list">
+                {% for message in messages %}
+                    <li class="message-item {{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <section class="upload-card matrix-upload-card">
+            <section class="matrix-upload-guide" aria-label="Guia de carga">
+                <article class="matrix-upload-note-card">
+                    <p class="matrix-upload-note-title">Instrucciones importantes</p>
+                    <ul class="matrix-upload-note-list">
+                        <li>El archivo debe estar en formato Excel .xlsx o .xlsm.</li>
+                        <li>La estructura debe coincidir con la matriz extendida esperada.</li>
+                        <li>Los datos del programa deben estar en la fila 2 del archivo.</li>
+                        <li>No se permiten codigos de proyecto duplicados.</li>
+                    </ul>
+                </article>
+
+                <article class="matrix-upload-format-card">
+                    <p class="matrix-upload-format-title">Columnas clave esperadas</p>
+                    <div class="matrix-upload-format-pills">
+                        <span class="matrix-upload-format-pill">Nivel</span>
+                        <span class="matrix-upload-format-pill">Nombre Programa</span>
+                        <span class="matrix-upload-format-pill">Codigo</span>
+                        <span class="matrix-upload-format-pill">Competencia</span>
+                        <span class="matrix-upload-format-pill">Resultado</span>
+                        <span class="matrix-upload-format-pill">H Max</span>
+                        <span class="matrix-upload-format-pill">H Min</span>
+                        <span class="matrix-upload-format-pill">Trimestre</span>
+                    </div>
+                </article>
+            </section>
+
+            <form method="post" enctype="multipart/form-data" class="upload-form matrix-upload-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="preview">
+                <input id="matrix_file" name="matrix_file" class="matrix-file-input" type="file" accept=".xlsx,.xlsm" required>
+
+                <label class="matrix-upload-dropzone" for="matrix_file">
+                    <span class="matrix-upload-dropzone-glow" aria-hidden="true"></span>
+                    <span class="matrix-upload-icon-shell" aria-hidden="true">
+                        <img class="matrix-upload-drop-icon" src="{% static 'icons/archive-up-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="matrix-upload-drop-copy">
+                        <span class="matrix-upload-drop-title">Selecciona tu archivo Excel de matriz</span>
+                        <span class="matrix-upload-drop-subtitle">Pasa el cursor para resaltar la zona de carga y haz clic para elegir el archivo.</span>
+                        <span class="matrix-upload-drop-meta">Formatos aceptados: .xlsx y .xlsm.</span>
+                        <span class="matrix-upload-file-name" id="matrixFileName">Ningun archivo seleccionado</span>
+                    </span>
+                    <span class="matrix-upload-drop-action">Elegir archivo</span>
+                </label>
+
+                <div class="matrix-upload-actions">
+                    <a class="matrix-upload-cancel" href="{% url 'dashboard' %}" data-spa="true">Cancelar</a>
+                    <button class="primary-btn matrix-upload-submit" type="submit">Previsualizar datos</button>
+                </div>
+            </form>
+        </section>
+
+        {% if preview %}
+            <section class="matrix-preview-shell">
+                <section class="matrix-header-card">
+                    <p class="matrix-program-title">{{ preview.program_name|default:"Programa sin nombre" }}</p>
+                    <p class="matrix-project-chip">{{ preview.project_description|default:"Sin descripcion de proyecto" }}</p>
+                    <div class="matrix-meta-line">
+                        <span>Codigo: <strong>{{ preview.program_code|default:"-" }}</strong></span>
+                        <span>Version: <strong>{{ preview.version|default:"-" }}</strong></span>
+                        <span>Nivel: <strong>{{ preview.level|default:"-" }}</strong></span>
+                        <span>Proyecto: <strong>{{ preview.project_code|default:"-" }}</strong></span>
+                    </div>
+                </section>
+
+                {% if preview.project_code_exists %}
+                    <div class="matrix-warning-card">
+                        El codigo de proyecto {{ preview.project_code }} ya existe en la BD. Puedes repetir el programa, pero no volver a registrar el mismo codigo de proyecto.
+                    </div>
+                {% endif %}
+
+                <section class="matrix-toolbar-card">
+                    <div class="matrix-toolbar-left">
+                        <span class="matrix-pill">{{ preview.competency_count }} competencias</span>
+                        <span class="matrix-pill">{{ preview.result_count }} resultados</span>
+                    </div>
+                    <div class="matrix-toolbar-right">
+                        <input id="matrixSearch" class="matrix-search" type="search" placeholder="Buscar competencia o resultado...">
+                        <form method="post" class="inline-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="save">
+                            <button class="primary-btn" type="submit" {% if preview.project_code_exists %}disabled{% endif %}>Guardar todo</button>
+                        </form>
+                    </div>
+                </section>
+
+                <section class="matrix-table-card">
+                    <div class="result-table-wrap">
+                        <table class="matrix-table" id="matrixPreviewTable">
+                            <colgroup>
+                                <col class="matrix-col-competency">
+                                <col class="matrix-col-code">
+                                <col class="matrix-col-duration">
+                                <col class="matrix-col-result">
+                                <col class="matrix-col-hmax">
+                                <col class="matrix-col-hmin">
+                                <col class="matrix-col-trimester">
+                                <col class="matrix-col-hsem">
+                                <col class="matrix-col-htrim">
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th class="matrix-head-text">Competencia</th>
+                                    <th class="matrix-head-text">Codigo</th>
+                                    <th class="matrix-head-text">Duracion (H)</th>
+                                    <th class="matrix-head-text">Resultado de aprendizaje</th>
+                                    <th class="matrix-head-num">H Max</th>
+                                    <th class="matrix-head-num">H Min</th>
+                                    <th class="matrix-head-num">Trimestre</th>
+                                    <th class="matrix-head-num">H/Sem</th>
+                                    <th class="matrix-head-num">H/Trim</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for competency in preview.competencies %}
+                                    {% if competency.results %}
+                                        {% for result in competency.results %}
+                                            <tr class="matrix-row" data-search="{{ competency.name|lower }} {{ competency.code|default:''|lower }} {{ result.name|lower }} {{ result.trimester|default:''|lower }}">
+                                                {% if forloop.first %}
+                                                    <td rowspan="{{ competency.results|length }}" class="matrix-competency-cell">{{ competency.name }}</td>
+                                                    <td rowspan="{{ competency.results|length }}" class="matrix-code-cell">{{ competency.code|default:"-" }}</td>
+                                                    <td rowspan="{{ competency.results|length }}" class="matrix-num-cell">{{ competency.hours|default:"-" }}</td>
+                                                {% endif %}
+                                                <td class="matrix-result-cell">{{ result.name }}</td>
+                                                <td class="matrix-num-cell">{{ result.hours_max|default:"-" }}</td>
+                                                <td class="matrix-num-cell">{{ result.hours_min|default:"-" }}</td>
+                                                <td class="matrix-num-cell">{{ result.trimester|default:"-" }}</td>
+                                                <td class="matrix-num-cell">{{ result.weekly_hours|default:"-" }}</td>
+                                                <td class="matrix-num-cell">{{ result.trimester_hours|default:"-" }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr class="matrix-row" data-search="{{ competency.name|lower }} {{ competency.code|default:''|lower }}">
+                                            <td class="matrix-competency-cell">{{ competency.name }}</td>
+                                            <td class="matrix-code-cell">{{ competency.code|default:"-" }}</td>
+                                            <td class="matrix-num-cell">{{ competency.hours|default:"-" }}</td>
+                                            <td colspan="6">Esta competencia no trae resultados en el archivo.</td>
+                                        </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </section>
+
+            <script>
+                (function () {
+                    const searchInput = document.getElementById("matrixSearch");
+                    const rows = Array.from(document.querySelectorAll(".matrix-row"));
+
+                    if (!searchInput || rows.length === 0) {
+                        return;
+                    }
+
+                    const groups = [];
+                    let currentGroup = null;
+
+                    rows.forEach((row) => {
+                        if (row.querySelector(".matrix-competency-cell")) {
+                            currentGroup = { rows: [], search: "" };
+                            groups.push(currentGroup);
+                        }
+
+                        if (!currentGroup) {
+                            currentGroup = { rows: [], search: "" };
+                            groups.push(currentGroup);
+                        }
+
+                        currentGroup.rows.push(row);
+                        currentGroup.search += ` ${row.dataset.search || row.textContent.toLowerCase()}`;
+                    });
+
+                    searchInput.addEventListener("input", function () {
+                        const term = searchInput.value.trim().toLowerCase();
+                        groups.forEach((group) => {
+                            const visible = !term || group.search.includes(term);
+                            group.rows.forEach((row) => {
+                                row.style.display = visible ? "" : "none";
+                            });
+                        });
+                    });
+                })();
+            </script>
+        {% endif %}
+
+        <script>
+            (function () {
+                const fileInput = document.getElementById("matrix_file");
+                const fileName = document.getElementById("matrixFileName");
+
+                if (!fileInput || !fileName) {
+                    return;
+                }
+
+                fileInput.addEventListener("change", function () {
+                    const selectedFile = fileInput.files && fileInput.files[0];
+                    fileName.textContent = selectedFile ? selectedFile.name : "Ningun archivo seleccionado";
+                });
+            })();
+        </script>
+    </main>
+
+    <nav class="navigation" aria-label="Navegacion principal">
+        <ul>
+            <li class="list {% if active_tab == 'inicio' %}active{% endif %}">
+                <a href="{% url 'dashboard' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/home-smile-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Inicio</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/magnifer-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Buscar</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'crear' %}active{% endif %}">
+                <a href="{% url 'matrix-upload' %}" data-spa="true" data-fab-toggle="true" aria-expanded="false">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/add-circle-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Cargar</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/bell-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Alertas</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'perfil' %}active{% endif %}">
+                <a href="{% url 'profile' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/user-circle-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Perfil</span>
+                </a>
+            </li>
+            <div class="indicator"></div>
+        </ul>
+    </nav>
+</body>
+</html>

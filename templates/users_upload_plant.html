@@ -1,0 +1,275 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempus | Carga Planta</title>
+    {% now "U" as asset_version %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'icons/logo-sena-white.svg' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v={{ asset_version }}">
+    <link rel="stylesheet" href="{% static 'css/users.css' %}?v={{ asset_version }}">
+    <script src="{% static 'js/dashboard.js' %}?v={{ asset_version }}" defer></script>
+</head>
+<body class="users-page users-upload-page">
+    <div class="sena-logo" aria-label="Logo SENA">
+        <img src="{% static 'icons/logo-sena.svg' %}" alt="Logo SENA">
+    </div>
+
+    <main class="dashboard-shell">
+        <header class="hero users-hero">
+            <p class="eyebrow">Carga de usuarios</p>
+            <h1>Subir instructores planta por Excel</h1>
+            <p class="hero-copy">Se leerán columnas de N°, Nombre y apellidos, CEDULA, AREA y ESTUDIOS para crear o actualizar usuarios planta.</p>
+        </header>
+
+        {% if messages %}
+            <ul class="message-list">
+                {% for message in messages %}
+                    <li class="message-item {{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <section class="upload-card users-upload-card">
+            <form method="post" enctype="multipart/form-data" class="upload-form users-upload-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="preview">
+                <input id="users_file" name="users_file" class="users-file-input" type="file" accept=".xlsx,.xlsm" required>
+
+                <label class="users-upload-dropzone" for="users_file">
+                    <span class="users-upload-glow" aria-hidden="true"></span>
+                    <span class="users-upload-icon-shell" aria-hidden="true">
+                        <img class="users-upload-icon" src="{% static 'icons/user-heart-rounded-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="users-upload-copy">
+                        <span class="users-upload-title">Selecciona el Excel de instructores planta</span>
+                        <span class="users-upload-subtitle">Carga el archivo para previsualizar y validar antes de guardar en el sistema.</span>
+                        <span class="users-upload-meta">Formatos soportados: .xlsx y .xlsm.</span>
+                        <span class="users-upload-file-name" id="usersFileName">Ningún archivo seleccionado</span>
+                    </span>
+                    <span class="users-upload-action">Elegir archivo</span>
+                </label>
+
+                <div class="users-upload-cta-row">
+                    <a
+                        class="users-icon-action users-upload-template-btn"
+                        href="{% url 'users-plant-upload-template' %}"
+                        aria-label="Descargar plantilla de planta"
+                        data-tooltip="Descargar plantilla de planta"
+                    >
+                        <img src="{% static 'icons/download-minimalistic-svgrepo-com.svg' %}" alt="">
+                    </a>
+                    <button class="primary-btn users-upload-submit" type="submit" disabled aria-disabled="true">Previsualizar datos</button>
+                </div>
+            </form>
+        </section>
+
+        {% if preview %}
+            <section class="users-preview-shell">
+                <section class="users-preview-top-actions" aria-label="Acciones de previsualización">
+                    <a class="users-icon-action users-icon-action--cancel" href="{% url 'users-panel' %}" data-spa="true" aria-label="Cancelar" data-tooltip="Cancelar">
+                        <img src="{% static 'icons/paper-bin-svgrepo-com.svg' %}" alt="">
+                    </a>
+                    <form method="post" class="inline-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="save">
+                        <button class="users-icon-action users-icon-action--upload" type="submit" aria-label="Cargar usuarios" data-tooltip="Cargar usuarios">
+                            <img src="{% static 'icons/upload-svgrepo-com.svg' %}" alt="">
+                        </button>
+                    </form>
+                </section>
+
+                <section class="users-preview-summary">
+                    <span class="users-pill">Filas válidas: {{ preview.rows_processed }}</span>
+                    <span class="users-pill">Filas omitidas: {{ preview.skipped_rows }}</span>
+                    <span class="users-pill users-pill--create">Nuevos: {{ preview.create_count }}</span>
+                    <span class="users-pill users-pill--update">Actualiza: {{ preview.update_count }}</span>
+                </section>
+
+                <section class="users-table-card">
+                    <div class="users-table-wrap">
+                        <table class="users-table">
+                            <thead>
+                                <tr>
+                                    <th>Fila</th>
+                                    <th>N°</th>
+                                    <th>Nombre</th>
+                                    <th>Cédula</th>
+                                    <th>Área</th>
+                                    <th>Estudios</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for instructor in preview.instructors %}
+                                    <tr>
+                                        <td>{{ instructor.source_row }}</td>
+                                        <td>{{ instructor.employee_number|default:"-" }}</td>
+                                        <td>{{ instructor.full_name|default:"-" }}</td>
+                                        <td>{{ instructor.document_number|default:"-" }}</td>
+                                        <td>{{ instructor.area|default:"-" }}</td>
+                                        <td>{{ instructor.studies|default:"-" }}</td>
+                                        <td>
+                                            {% if instructor.will_update %}
+                                                <span class="users-role users-role--update">Actualizar</span>
+                                            {% else %}
+                                                <span class="users-role users-role--create">Crear</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+            </section>
+        {% endif %}
+
+        <script>
+            (function () {
+                const fileInput = document.getElementById("users_file");
+                const fileName = document.getElementById("usersFileName");
+                const previewSubmit = document.querySelector(".users-upload-submit");
+                const previewActions = document.querySelector(".users-preview-top-actions");
+                if (!fileInput || !fileName) {
+                    return;
+                }
+
+                let bounceTimer = null;
+
+                function syncPreviewSubmitState() {
+                    const selectedFile = fileInput.files && fileInput.files[0];
+                    fileName.textContent = selectedFile ? selectedFile.name : "Ningún archivo seleccionado";
+
+                    if (!previewSubmit) {
+                        return;
+                    }
+
+                    const hasFile = Boolean(selectedFile);
+                    previewSubmit.disabled = !hasFile;
+                    previewSubmit.setAttribute("aria-disabled", hasFile ? "false" : "true");
+
+                    if (bounceTimer) {
+                        window.clearTimeout(bounceTimer);
+                        bounceTimer = null;
+                    }
+
+                    previewSubmit.classList.remove("users-upload-submit--bounce");
+
+                    if (!hasFile) {
+                        return;
+                    }
+
+                    window.requestAnimationFrame(() => {
+                        previewSubmit.classList.add("users-upload-submit--bounce");
+                    });
+
+                    bounceTimer = window.setTimeout(() => {
+                        previewSubmit.classList.remove("users-upload-submit--bounce");
+                        bounceTimer = null;
+                    }, 1900);
+                }
+
+                fileInput.addEventListener("change", syncPreviewSubmitState);
+                syncPreviewSubmitState();
+
+                if (!previewActions) {
+                    return;
+                }
+
+                const previewShell = previewActions.parentElement;
+                if (!previewShell) {
+                    return;
+                }
+
+                const anchor = document.createElement("span");
+                anchor.className = "users-preview-actions-anchor";
+                previewShell.insertBefore(anchor, previewActions);
+
+                let isFloating = false;
+                let hideTimer = null;
+
+                function setFloatingState(shouldFloat) {
+                    if (shouldFloat === isFloating) {
+                        return;
+                    }
+
+                    isFloating = shouldFloat;
+
+                    if (hideTimer) {
+                        window.clearTimeout(hideTimer);
+                        hideTimer = null;
+                    }
+
+                    if (shouldFloat) {
+                        previewActions.classList.add("is-floating");
+                        window.requestAnimationFrame(() => {
+                            previewActions.classList.add("is-visible");
+                        });
+                        return;
+                    }
+
+                    previewActions.classList.remove("is-visible");
+                    hideTimer = window.setTimeout(() => {
+                        previewActions.classList.remove("is-floating");
+                        hideTimer = null;
+                    }, 250);
+                }
+
+                const observer = new IntersectionObserver(
+                    function (entries) {
+                        const entry = entries[0];
+                        const shouldFloat = !entry.isIntersecting;
+                        setFloatingState(shouldFloat);
+                    },
+                    {
+                        root: null,
+                        threshold: 0.01,
+                        rootMargin: "-72px 0px 0px 0px",
+                    }
+                );
+
+                observer.observe(anchor);
+            })();
+        </script>
+    </main>
+
+    <nav class="navigation" aria-label="Navegacion principal">
+        <ul>
+            <li class="list {% if active_tab == 'inicio' %}active{% endif %}">
+                <a href="{% url 'dashboard' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/home-smile-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Inicio</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/magnifer-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Buscar</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'crear' %}active{% endif %}">
+                <a href="{% url 'matrix-upload' %}" data-spa="true" data-fab-toggle="true" aria-expanded="false">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/add-circle-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Cargar</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/bell-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Alertas</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'perfil' %}active{% endif %}">
+                <a href="{% url 'profile' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/user-circle-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Perfil</span>
+                </a>
+            </li>
+            <div class="indicator"></div>
+        </ul>
+    </nav>
+</body>
+</html>

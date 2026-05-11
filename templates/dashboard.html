@@ -1,0 +1,205 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempus | Dashboard</title>
+    {% now "U" as asset_version %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'icons/logo-sena-white.svg' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v={{ asset_version }}">
+    <script src="{% static 'js/dashboard.js' %}?v={{ asset_version }}" defer></script>
+</head>
+<body class="db-home">
+    <div class="sena-logo" aria-label="Logo SENA">
+        <img src="{% static 'icons/logo-sena.svg' %}" alt="Logo SENA">
+    </div>
+
+    <div class="welcome-tag" role="status" aria-live="polite" aria-label="Mensaje de bienvenida">
+        <div class="welcome-tag-inner">
+            <div class="welcome-tag-content">
+                <div class="welcome-tag-header">
+                    <span class="welcome-tag-text">Bienvenido a</span>
+                    <span class="welcome-tag-brand">Tempus</span>
+                </div>
+                <p class="welcome-tag-copy">
+                    Gestiona programas de formación SENA, carga matrices extendidas y consulta resultados de aprendizaje desde un solo lugar.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <main class="dashboard-shell">
+
+        <!-- Barra superior derecha -->
+        <div class="db-topbar">
+            <span class="db-topbar-greeting">Hola, <strong>{{ request.user.get_username }}</strong></span>
+            <span class="db-topbar-role">Administrador</span>
+        </div>
+
+        <!-- KPIs -->
+        <section class="db-kpi-grid" aria-label="Indicadores">
+            <article class="db-kpi-card db-kpi--green">
+                <div class="db-kpi-icon">📋</div>
+                <div class="db-kpi-body">
+                    <span class="db-kpi-label">Matrices cargadas</span>
+                    <span class="db-kpi-value" id="kpiMatrices">—</span>
+                </div>
+            </article>
+            <article class="db-kpi-card db-kpi--teal">
+                <div class="db-kpi-icon">🏫</div>
+                <div class="db-kpi-body">
+                    <span class="db-kpi-label">Programas</span>
+                    <span class="db-kpi-value" id="kpiPrograms">—</span>
+                </div>
+            </article>
+            <article class="db-kpi-card db-kpi--blue">
+                <div class="db-kpi-icon">🎯</div>
+                <div class="db-kpi-body">
+                    <span class="db-kpi-label">Resultados totales</span>
+                    <span class="db-kpi-value" id="kpiResults">—</span>
+                </div>
+            </article>
+            <article class="db-kpi-card db-kpi--dark">
+                <div class="db-kpi-icon">⚙️</div>
+                <div class="db-kpi-body">
+                    <span class="db-kpi-label">Competencias</span>
+                    <span class="db-kpi-value" id="kpiCompetencies">—</span>
+                </div>
+            </article>
+        </section>
+
+        <!-- Módulos -->
+        <section class="db-section-title">
+            <h2>Módulos disponibles</h2>
+        </section>
+
+        <section class="quick-actions" aria-label="Acciones rapidas">
+            <a class="action-card db-module-card" href="{% url 'matrix-upload' %}" data-spa="true">
+                <div class="db-module-icon db-module-icon--green">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                </div>
+                <div class="db-module-body">
+                    <h2>Cargar matriz</h2>
+                    <p>Sube el Excel, valida celdas combinadas y previsualiza antes de guardar.</p>
+                </div>
+                <span class="db-module-arrow">→</span>
+            </a>
+
+            <a class="action-card db-module-card db-module-card--blue" href="{% url 'matrix-list' %}" data-spa="true">
+                <div class="db-module-icon db-module-icon--blue">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3" y="3" width="18" height="18" rx="3"/>
+                        <path d="M3 9h18M9 21V9"/>
+                    </svg>
+                </div>
+                <div class="db-module-body">
+                    <h2>Ver matrices</h2>
+                    <p>Consulta programas registrados, trimestres y competencias con un clic.</p>
+                </div>
+                <span class="db-module-arrow">→</span>
+            </a>
+
+            <a class="action-card db-module-card" href="{% url 'users-panel' %}" data-spa="true">
+                <div class="db-module-icon db-module-icon--green">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <line x1="19" y1="8" x2="19" y2="14"/>
+                        <line x1="22" y1="11" x2="16" y2="11"/>
+                    </svg>
+                </div>
+                <div class="db-module-body">
+                    <h2>Panel de usuarios</h2>
+                    <p>Consulta roles y carga contratistas desde Excel sin perder informacion.</p>
+                </div>
+                <span class="db-module-arrow">→</span>
+            </a>
+        </section>
+
+    </main>
+
+    <nav class="navigation" aria-label="Navegacion principal">
+        <ul>
+            <li class="list {% if active_tab == 'inicio' %}active{% endif %}">
+                <a href="{% url 'dashboard' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/home-smile-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Inicio</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/magnifer-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Buscar</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'crear' %}active{% endif %}">
+                <a href="{% url 'matrix-upload' %}" data-spa="true" data-fab-toggle="true" aria-expanded="false">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/add-circle-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Cargar</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/bell-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Alertas</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'perfil' %}active{% endif %}">
+                <a href="{% url 'profile' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/user-circle-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Perfil</span>
+                </a>
+            </li>
+            <div class="indicator"></div>
+        </ul>
+    </nav>
+
+    <script>
+        // Cargar KPIs desde la API de matrices
+        (function () {
+            fetch("{% url 'matrix-list' %}", { headers: { "X-Requested-With": "XMLHttpRequest" } })
+                .then(function (res) { return res.text(); })
+                .then(function (html) {
+                    const doc = new DOMParser().parseFromString(html, "text/html");
+                    const total = doc.querySelectorAll(".mlist-card").length;
+                    const programSet = new Set();
+                    let totalResults = 0;
+                    let totalCompetencies = 0;
+
+                    doc.querySelectorAll(".mlist-card").forEach(function (card) {
+                        const nums = card.querySelectorAll(".mlist-stat-num");
+                        if (nums[0]) totalCompetencies += parseInt(nums[0].textContent) || 0;
+                        if (nums[1]) totalResults += parseInt(nums[1].textContent) || 0;
+                        const codeEl = card.querySelector(".mlist-meta-value");
+                        if (codeEl) programSet.add(codeEl.textContent.trim());
+                    });
+
+                    document.getElementById("kpiMatrices").textContent = total;
+                    document.getElementById("kpiPrograms").textContent = programSet.size || total;
+                    document.getElementById("kpiResults").textContent = totalResults;
+                    document.getElementById("kpiCompetencies").textContent = totalCompetencies;
+                })
+                .catch(function () {
+                    ["kpiMatrices","kpiPrograms","kpiResults","kpiCompetencies"].forEach(function(id){
+                        document.getElementById(id).textContent = "0";
+                    });
+                });
+        })();
+    </script>
+</body>
+</html>

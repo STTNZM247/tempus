@@ -1,0 +1,721 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempus | Configuracion de ficha</title>
+    {% now "U" as asset_version %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'icons/logo-sena-white.svg' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v={{ asset_version }}">
+    <link rel="stylesheet" href="{% static 'css/fichas.css' %}?v={{ asset_version }}">
+    <script src="{% static 'js/dashboard.js' %}?v={{ asset_version }}" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
+</head>
+<body>
+    <div class="sena-logo" aria-label="Logo SENA">
+        <img src="{% static 'icons/logo-sena.svg' %}" alt="Logo SENA">
+    </div>
+
+    <main class="dashboard-shell">
+        <header class="hero fi-hero fi-hero--create">
+            <div>
+                <p class="eyebrow">Programacion</p>
+                <h1>Configuracion de ficha</h1>
+            </div>
+            <a href="{% url 'fichas-panel' %}" data-spa="true" class="fi-back-link">Volver al listado</a>
+        </header>
+
+        <section class="fi-grid fi-config-page" aria-label="Configuracion de ficha">
+            <article class="fi-card fi-config-card">
+                <div class="fi-ficha-linear" aria-label="Resumen lineal de ficha">
+                    <div class="fi-ficha-linear-top">
+                        <h2>Ficha {{ ficha.codigo }}</h2>
+                        <span class="fi-ficha-programa">{{ ficha.matrix.program_name }}</span>
+                    </div>
+
+                    <div class="fi-ficha-linear-meta">
+                        <span class="fi-ficha-meta-item"><strong>Trimestres:</strong> {% if ficha.cdf_trimestres %}{{ ficha.cdf_trimestres }}{% else %}Sin CDF{% endif %}</span>
+                        <span class="fi-ficha-meta-item"><strong>Nivel:</strong> {{ ficha.matrix.level|default:"-" }}</span>
+                        <span class="fi-ficha-meta-item"><strong>Version:</strong> {{ ficha.version_programa|default:"-" }}</span>
+                        <span class="fi-ficha-meta-item"><strong>Codigo programa:</strong> {{ ficha.matrix.program_code }}</span>
+                        <span class="fi-ficha-meta-item"><strong>Codigo proyecto:</strong> {{ ficha.matrix.project_code }}</span>
+                        <span class="fi-ficha-meta-item">
+                            <strong>Jornada:</strong>
+                            {% if ficha.jornada == 'mixta_18_22' %}
+                                Mixta 6:00 p.m. a 10:00 p.m.
+                            {% elif ficha.jornada == 'mixta_16_22' %}
+                                Mixta 4:00 p.m. a 10:00 p.m.
+                            {% elif ficha.jornada == 'diurna' %}
+                                Diurna 6:00 a.m. a 6:00 p.m.
+                            {% elif ficha.jornada == 'fines_semana' %}
+                                Fines de semana
+                            {% else %}
+                                {{ ficha.get_jornada_display }}
+                            {% endif %}
+                        </span>
+                        <span class="fi-ficha-meta-item"><strong>Estado:</strong> {{ ficha.get_estado_display }}</span>
+                        <span class="fi-ficha-meta-item"><strong>Inicio lectiva:</strong> {{ ficha.fecha_inicio_lectiva|date:"d/m/Y"|default:"-" }}</span>
+                        <span class="fi-ficha-meta-item"><strong>Fin lectiva:</strong> {{ ficha.fecha_fin_lectiva|date:"d/m/Y"|default:"-" }}</span>
+                    </div>
+                </div>
+            </article>
+
+            <!-- ====== CARRUSEL: RAPs + Instructores ====== -->
+            <div class="fi-carousel-wrap" id="fiCarousel">
+
+                <!-- Flecha izquierda -->
+                <button class="fi-carousel-btn fi-carousel-btn--prev" id="carouselPrev" type="button" aria-label="Panel anterior" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+
+                <!-- Viewport -->
+                <div class="fi-carousel-viewport">
+                    <div class="fi-carousel-track" id="carouselTrack">
+
+                        <!-- SLIDE 0: Resultados de Aprendizaje -->
+                        <div class="fi-carousel-slide">
+                            <article class="fi-card fi-rap-card-wrap" aria-label="Resultados de aprendizaje">
+                                <div class="fi-rap-section">
+                                    <div class="fi-rap-header">
+                                        <h3 class="fi-rap-title">Resultados de Aprendizaje</h3>
+                                        <span class="fi-rap-count" id="rap-count"></span>
+                                    </div>
+                                    <div class="fi-rap-controls">
+                                        <div class="fi-rap-filter" id="trimFilter">
+                                            <div class="fi-rap-filter-trigger" id="trimTrigger" tabindex="0" role="button" aria-haspopup="listbox" aria-expanded="false">
+                                                <span class="fi-rap-filter-label" id="trimLabel">Todos los trimestres</span>
+                                                <svg class="fi-rap-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                            </div>
+                                            <div class="fi-rap-filter-menu" id="trimMenu" role="listbox">
+                                                <div class="fi-rap-filter-option fi-rap-filter-option--active" data-value="">Todos</div>
+                                                {% for t in trimestres %}
+                                                <div class="fi-rap-filter-option" data-value="{{ t }}">Trimestre {{ t }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="fi-rap-search-wrap">
+                                            <svg class="fi-rap-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                            <input class="fi-rap-search-input" id="rapSearch" type="text" placeholder="Buscar resultado..." autocomplete="off" aria-label="Buscar resultado de aprendizaje">
+                                            <button class="fi-rap-search-clear" id="rapSearchClear" type="button" aria-label="Limpiar" style="display:none;">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="fi-rap-grid" id="rapGrid">
+                                        {% for result in results %}
+                                        <div class="fi-rap-item"
+                                             data-trimester="{{ result.trimester }}"
+                                             data-search="{{ result.competency.code|lower }} {{ result.name|lower }}">
+                                            <span class="fi-rap-comp-code">{{ result.competency.code }}</span>
+                                            <span class="fi-rap-name">{{ result.name }}</span>
+                                        </div>
+                                        {% empty %}
+                                        <p class="fi-rap-empty">No hay resultados de aprendizaje asociados a esta ficha.</p>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="fi-rap-no-results" id="rapNoResults" style="display:none;"><p>Sin resultados para este filtro.</p></div>
+                                </div>
+                            </article>
+                        </div>
+
+                        <!-- SLIDE 1: Instructores -->
+                        <div class="fi-carousel-slide">
+                            <article class="fi-card fi-inst-card-wrap" aria-label="Instructores">
+                                <div class="fi-rap-section">
+                                    <div class="fi-rap-header">
+                                        <h3 class="fi-rap-title">Instructores</h3>
+                                        <span class="fi-rap-count" id="inst-count"></span>
+                                    </div>
+                                    <div class="fi-rap-controls">
+                                        <!-- Filtro especialidad -->
+                                        <div class="fi-rap-filter" id="specFilter">
+                                            <div class="fi-rap-filter-trigger" id="specTrigger" tabindex="0" role="button" aria-haspopup="listbox" aria-expanded="false">
+                                                <span class="fi-rap-filter-label" id="specLabel">Todas las especialidades</span>
+                                                <svg class="fi-rap-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                            </div>
+                                            <div class="fi-rap-filter-menu fi-rap-filter-menu--tall" id="specMenu" role="listbox">
+                                                <div class="fi-rap-filter-option fi-rap-filter-option--active" data-value="">Todas</div>
+                                                {% for sp in specialties_list %}
+                                                <div class="fi-rap-filter-option" data-value="{{ sp }}" title="{{ sp }}">{{ sp }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <!-- Búsqueda instructores -->
+                                        <div class="fi-rap-search-wrap">
+                                            <svg class="fi-rap-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                            <input class="fi-rap-search-input" id="instSearch" type="text" placeholder="Buscar instructor..." autocomplete="off" aria-label="Buscar instructor">
+                                            <button class="fi-rap-search-clear" id="instSearchClear" type="button" aria-label="Limpiar" style="display:none;">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- Grid DnD instructores -->
+                                    <div class="fi-inst-grid" id="instGrid">
+                                        {% for inst in instructors %}
+                                        <div class="fi-inst-item"
+                                             data-search="{{ inst.full_name|lower }} {{ inst.document }} {{ inst.specialty|lower }} {{ inst.role|lower }}"
+                                             data-specialty="{{ inst.specialty }}"
+                                             data-name="{{ inst.full_name }}"
+                                             data-doc="{{ inst.document }}"
+                                             data-role="{{ inst.role }}"
+                                             data-email="{{ inst.email }}"
+                                             data-coord="{{ inst.coordination }}"
+                                             data-modality="{{ inst.modality }}"
+                                             data-contract-start="{{ inst.contract_start }}"
+                                             data-contract-end="{{ inst.contract_end }}"
+                                             data-contract-num="{{ inst.contract_number }}"
+                                             data-level="{{ inst.education_level }}"
+                                             data-undergrad="{{ inst.undergraduate }}"
+                                             data-postgrad="{{ inst.postgraduate }}"
+                                             data-area="{{ inst.area }}"
+                                             data-avatar="{{ inst.avatar_url }}">
+                                            <div class="fi-inst-avatar-wrap">
+                                                {% if inst.avatar_url %}
+                                                <img class="fi-inst-avatar fi-inst-avatar--photo" src="{{ inst.avatar_url }}" alt="Foto de {{ inst.full_name }}">
+                                                {% else %}
+                                                <span class="fi-inst-avatar fi-inst-avatar--icon">
+                                                    <img src="{% static 'icons/user-circle-svgrepo-com.svg' %}" alt="">
+                                                </span>
+                                                {% endif %}
+                                                <span class="fi-inst-role-badge fi-inst-role-badge--{{ inst.role|lower }}">{{ inst.role }}</span>
+                                            </div>
+                                            <div class="fi-inst-info">
+                                                <span class="fi-inst-name">{{ inst.full_name }}</span>
+                                                <span class="fi-inst-doc">CC {{ inst.document }}</span>
+                                                <span class="fi-inst-specialty" title="{{ inst.specialty }}">{{ inst.specialty|default:"Sin especialidad" }}</span>
+                                            </div>
+                                            <button class="fi-inst-ver-mas" type="button" data-action="ver-instructor" aria-label="Ver detalle de {{ inst.full_name }}">Ver más</button>
+                                        </div>
+                                        {% empty %}
+                                        <p class="fi-rap-empty">No hay instructores registrados.</p>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="fi-rap-no-results" id="instNoResults" style="display:none;"><p>Sin instructores para este filtro.</p></div>
+                                </div>
+                            </article>
+                        </div>
+
+                    </div><!-- /track -->
+                </div><!-- /viewport -->
+
+                <!-- Flecha derecha -->
+                <button class="fi-carousel-btn fi-carousel-btn--next" id="carouselNext" type="button" aria-label="Panel siguiente">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+            </div>
+
+            <!-- Indicadores de slide -->
+            <div class="fi-carousel-dots" id="carouselDots">
+                <button class="fi-carousel-dot fi-carousel-dot--active" data-index="0" type="button">RAPs</button>
+                <button class="fi-carousel-dot" data-index="1" type="button">Instructores</button>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- ====== MODAL DETALLE INSTRUCTOR ====== -->
+    <div class="fi-inst-modal-shell" id="instModalShell" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="instModalName">
+        <div class="fi-inst-modal-card">
+            <header class="fi-inst-modal-head">
+                <div class="fi-inst-modal-head-left">
+                    <div class="fi-inst-modal-avatar-wrap" id="modalAvatarWrap"></div>
+                    <div>
+                        <p class="fi-inst-modal-eyebrow">Detalle del instructor</p>
+                        <h2 id="instModalName">-</h2>
+                    </div>
+                </div>
+                <button type="button" class="fi-inst-modal-close" id="instModalClose" aria-label="Cerrar">Cerrar</button>
+            </header>
+            <div class="fi-inst-modal-body">
+                <div class="fi-inst-modal-grid">
+                    <article class="fi-inst-modal-block">
+                        <h3>Datos básicos</h3>
+                        <div class="fi-inst-modal-fields">
+                            <div><span>Correo</span><strong id="mEmail">-</strong></div>
+                            <div><span>Documento</span><strong id="mDoc">-</strong></div>
+                            <div><span>Rol</span><strong id="mRole">-</strong></div>
+                            <div><span>N° contrato / Empleado</span><strong id="mContractNum">-</strong></div>
+                        </div>
+                    </article>
+                    <article class="fi-inst-modal-block">
+                        <h3>Vinculación</h3>
+                        <div class="fi-inst-modal-fields">
+                            <div><span>Coordinación / Área</span><strong id="mCoord">-</strong></div>
+                            <div><span>Modalidad</span><strong id="mModality">-</strong></div>
+                            <div><span>Inicio contrato</span><strong id="mStart">-</strong></div>
+                            <div><span>Fin contrato</span><strong id="mEnd">-</strong></div>
+                        </div>
+                    </article>
+                    <article class="fi-inst-modal-block fi-inst-modal-block--full">
+                        <h3>Formación</h3>
+                        <div class="fi-inst-modal-fields fi-inst-modal-fields--columns">
+                            <div><span>Nivel educativo</span><strong id="mLevel">-</strong></div>
+                            <div><span>Pregrado</span><strong id="mUndergrad">-</strong></div>
+                            <div><span>Posgrado</span><strong id="mPostgrad">-</strong></div>
+                            <div><span>Especialidad / Área CIDE</span><strong id="mSpecialty">-</strong></div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        /* ============================================================
+           UTILIDADES COMPARTIDAS
+        ============================================================ */
+        function normalize(str) {
+            if (!str) return "";
+            return String(str)
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase()
+                .replace(/[^a-z0-9\s]/g, "")
+                .replace(/\s+/g, " ")
+                .trim();
+        }
+
+        /**
+         * Similitud de especialidades: compara palabras significativas (>=3 chars)
+         * usando coincidencia de prefijo para tolerar plurales y variaciones.
+         */
+        function specialtyMatch(instSpecialty, filterSpecialty) {
+            if (!filterSpecialty) return true;
+            var iNorm = normalize(instSpecialty);
+            var fNorm = normalize(filterSpecialty);
+            if (!iNorm) return false;
+            if (iNorm.indexOf(fNorm) !== -1 || fNorm.indexOf(iNorm) !== -1) return true;
+            var fWords = fNorm.split(" ").filter(function (w) { return w.length >= 3; });
+            var iWords = iNorm.split(" ").filter(function (w) { return w.length >= 3; });
+            for (var fi = 0; fi < fWords.length; fi++) {
+                var fw = fWords[fi];
+                for (var ii = 0; ii < iWords.length; ii++) {
+                    var iw = iWords[ii];
+                    var shorter = fw.length <= iw.length ? fw : iw;
+                    var longer  = fw.length <= iw.length ? iw : fw;
+                    var pfxLen = Math.max(3, Math.floor(shorter.length * 0.75));
+                    if (shorter.length >= 3 && longer.indexOf(shorter.substring(0, pfxLen)) !== -1) return true;
+                }
+            }
+            return false;
+        }
+
+        /**
+         * Inicializa un div-select personalizado.
+         * onSelect(value) se llama al elegir una opción.
+         */
+        function initDivSelect(triggerId, menuId, labelId, defaultLabel, onSelect) {
+            var trigger = document.getElementById(triggerId);
+            var menu    = document.getElementById(menuId);
+            var label   = document.getElementById(labelId);
+            if (!trigger || !menu || !label) return;
+
+            function close() {
+                menu.classList.remove("fi-rap-filter-menu--open");
+                trigger.setAttribute("aria-expanded", "false");
+            }
+            trigger.addEventListener("click", function (e) {
+                e.stopPropagation();
+                var open = menu.classList.contains("fi-rap-filter-menu--open");
+                if (open) { close(); } else {
+                    menu.classList.add("fi-rap-filter-menu--open");
+                    trigger.setAttribute("aria-expanded", "true");
+                }
+            });
+            trigger.addEventListener("keydown", function (e) {
+                if (e.key === "Enter" || e.key === " ") { e.preventDefault(); trigger.click(); }
+            });
+            document.addEventListener("click", function () { close(); });
+            menu.addEventListener("click", function (e) { e.stopPropagation(); });
+            menu.querySelectorAll(".fi-rap-filter-option").forEach(function (opt) {
+                opt.addEventListener("click", function () {
+                    menu.querySelectorAll(".fi-rap-filter-option").forEach(function (o) {
+                        o.classList.remove("fi-rap-filter-option--active");
+                        o.setAttribute("aria-selected", "false");
+                    });
+                    opt.classList.add("fi-rap-filter-option--active");
+                    opt.setAttribute("aria-selected", "true");
+                    var val = opt.dataset.value;
+                    label.textContent = val === "" ? defaultLabel : opt.textContent.trim();
+                    close();
+                    onSelect(val);
+                });
+            });
+        }
+
+        /**
+         * Inicializa una barra de búsqueda con botón X.
+         * onSearch(query) se llama al escribir o limpiar.
+         */
+        function initSearchBar(inputId, clearId, onSearch) {
+            var input = document.getElementById(inputId);
+            var clear = document.getElementById(clearId);
+            if (!input || !clear) return;
+            input.addEventListener("input", function () {
+                clear.style.display = input.value.length > 0 ? "" : "none";
+                onSearch(input.value);
+            });
+            clear.addEventListener("click", function () {
+                input.value = "";
+                clear.style.display = "none";
+                input.focus();
+                onSearch("");
+            });
+        }
+
+        /* ============================================================
+           PANEL 0: RAPs
+        ============================================================ */
+        var rapActiveTrim  = "";
+        var rapSearchQuery = "";
+        var rapGrid        = document.getElementById("rapGrid");
+        var rapNoResults   = document.getElementById("rapNoResults");
+        var rapCount       = document.getElementById("rap-count");
+
+        function applyRapFilters() {
+            var items   = rapGrid ? rapGrid.querySelectorAll(".fi-rap-item") : [];
+            var visible = 0;
+            items.forEach(function (item) {
+                var trimOk   = rapActiveTrim === "" || item.dataset.trimester == rapActiveTrim;
+                var searchOk = rapSearchQuery === "" || normalize(item.dataset.search).indexOf(normalize(rapSearchQuery)) !== -1;
+                var show = trimOk && searchOk;
+                item.style.display = show ? "" : "none";
+                if (show) visible++;
+            });
+            if (rapNoResults) rapNoResults.style.display = (visible === 0 && items.length > 0) ? "" : "none";
+            if (rapCount) rapCount.textContent = visible + " RAP" + (visible !== 1 ? "s" : "");
+        }
+
+        initDivSelect("trimTrigger", "trimMenu", "trimLabel", "Todos los trimestres", function (val) {
+            rapActiveTrim = val; applyRapFilters();
+        });
+        initSearchBar("rapSearch", "rapSearchClear", function (q) {
+            rapSearchQuery = q; applyRapFilters();
+        });
+
+        if (rapGrid) {
+            Sortable.create(rapGrid, {
+                animation: 150,
+                ghostClass:  "fi-rap-ghost",
+                chosenClass: "fi-rap-chosen",
+                dragClass:   "fi-rap-dragging",
+                filter:      ".fi-rap-empty",
+                group: { name: "raps", pull: true, put: false },
+                forceFallback: true,
+                fallbackOnBody: true,
+            });
+            rapGrid.querySelectorAll(".fi-rap-item").forEach(function (item) {
+                item.addEventListener("dblclick", function (e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    startFollowCursor(item, "rap", e);
+                });
+            });
+        }
+        applyRapFilters();
+
+        /* ============================================================
+           PANEL 1: Instructores
+        ============================================================ */
+        var instActiveSpec  = "";
+        var instSearchQuery = "";
+        var instGrid        = document.getElementById("instGrid");
+        var instNoResults   = document.getElementById("instNoResults");
+        var instCount       = document.getElementById("inst-count");
+
+        function applyInstFilters() {
+            var items   = instGrid ? instGrid.querySelectorAll(".fi-inst-item") : [];
+            var visible = 0;
+            items.forEach(function (item) {
+                var specOk   = specialtyMatch(item.dataset.specialty, instActiveSpec);
+                var searchOk = instSearchQuery === "" || normalize(item.dataset.search).indexOf(normalize(instSearchQuery)) !== -1;
+                var show = specOk && searchOk;
+                item.style.display = show ? "" : "none";
+                if (show) visible++;
+            });
+            if (instNoResults) instNoResults.style.display = (visible === 0 && items.length > 0) ? "" : "none";
+            if (instCount) instCount.textContent = visible + " instructor" + (visible !== 1 ? "es" : "");
+        }
+
+        initDivSelect("specTrigger", "specMenu", "specLabel", "Todas las especialidades", function (val) {
+            instActiveSpec = val; applyInstFilters();
+        });
+        initSearchBar("instSearch", "instSearchClear", function (q) {
+            instSearchQuery = q; applyInstFilters();
+        });
+
+        if (instGrid) {
+            Sortable.create(instGrid, {
+                animation:   150,
+                ghostClass:  "fi-rap-ghost",
+                chosenClass: "fi-rap-chosen",
+                dragClass:   "fi-rap-dragging",
+                filter:      ".fi-rap-empty",
+                group: { name: "instructors", pull: true, put: false },
+                forceFallback: true,
+                fallbackOnBody: true,
+            });
+            instGrid.querySelectorAll(".fi-inst-item").forEach(function (item) {
+                item.addEventListener("dblclick", function (e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    startFollowCursor(item, "inst", e);
+                });
+            });
+        }
+        applyInstFilters();
+
+        /* ============================================================
+           CARRUSEL
+        ============================================================ */
+        /* Estado global para cursor follower */
+        var followingItem = null;
+        var followingType = null;
+        var followingOriginParent = null;
+        var followingOriginNextSibling = null;
+        var followingOriginWidth = "";
+        var followingOriginHeight = "";
+
+        /**
+         * Inicia el modo "seguir cursor" para un item.
+         * El item se mueve con el cursor hasta que el usuario haga clic.
+         */
+        function startFollowCursor(item, type, event) {
+            if (followingItem) stopFollowCursor();
+
+            followingItem = item;
+            followingType = type;
+            followingOriginParent = item.parentNode;
+            followingOriginNextSibling = item.nextSibling;
+            followingOriginWidth = item.style.width || "";
+            followingOriginHeight = item.style.height || "";
+            var rect = item.getBoundingClientRect();
+
+            // Move item to body while following cursor to avoid clipping by carousel containers.
+            document.body.appendChild(item);
+
+            item.classList.add(type === "rap" ? "fi-rap-locked" : "fi-inst-locked");
+            item.style.position = "fixed";
+            item.style.left = event.clientX + "px";
+            item.style.top = event.clientY + "px";
+            item.style.transform = "translate(-50%, -50%)";
+            item.style.zIndex = "10000";
+            item.style.pointerEvents = "none";
+            item.style.opacity = "0.9";
+            item.style.willChange = "transform, left, top";
+            item.style.width = rect.width + "px";
+            item.style.height = rect.height + "px";
+            item.style.boxSizing = "border-box";
+
+            document.body.style.cursor = "grabbing";
+            document.body.style.userSelect = "none";
+
+            function onMouseMove(e) {
+                item.style.left = e.clientX + "px";
+                item.style.top = e.clientY + "px";
+            }
+
+            function onTouchMove(e) {
+                if (e.touches.length > 0) {
+                    var touch = e.touches[0];
+                    item.style.left = touch.clientX + "px";
+                    item.style.top = touch.clientY + "px";
+                }
+            }
+
+            function onClick(e) {
+                stopFollowCursor();
+            }
+
+            document.addEventListener("mousemove", onMouseMove);
+            document.addEventListener("touchmove", onTouchMove);
+            document.addEventListener("click", onClick, { once: true });
+
+            item._followCleanup = function () {
+                document.removeEventListener("mousemove", onMouseMove);
+                document.removeEventListener("touchmove", onTouchMove);
+            };
+        }
+
+        function stopFollowCursor() {
+            if (followingItem) {
+                if (followingItem._followCleanup) followingItem._followCleanup();
+
+                // Restore item to its original container/position.
+                if (followingOriginParent) {
+                    if (followingOriginNextSibling && followingOriginNextSibling.parentNode === followingOriginParent) {
+                        followingOriginParent.insertBefore(followingItem, followingOriginNextSibling);
+                    } else {
+                        followingOriginParent.appendChild(followingItem);
+                    }
+                }
+
+                followingItem.classList.remove("fi-rap-locked", "fi-inst-locked");
+                followingItem.style.position = "";
+                followingItem.style.left = "";
+                followingItem.style.top = "";
+                followingItem.style.transform = "";
+                followingItem.style.zIndex = "";
+                followingItem.style.pointerEvents = "";
+                followingItem.style.opacity = "";
+                followingItem.style.willChange = "";
+                followingItem.style.width = followingOriginWidth;
+                followingItem.style.height = followingOriginHeight;
+                followingItem.style.boxSizing = "";
+                followingItem._followCleanup = null;
+
+                followingItem = null;
+                followingType = null;
+                followingOriginParent = null;
+                followingOriginNextSibling = null;
+                followingOriginWidth = "";
+                followingOriginHeight = "";
+            }
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+        }
+
+        var track      = document.getElementById("carouselTrack");
+        var btnPrev    = document.getElementById("carouselPrev");
+        var btnNext    = document.getElementById("carouselNext");
+        var dots       = Array.from(document.querySelectorAll(".fi-carousel-dot"));
+        var totalSlides = 2;
+        var current    = 0;
+
+        function goToSlide(n) {
+            current = Math.max(0, Math.min(n, totalSlides - 1));
+            if (track) track.style.transform = "translateX(-" + (current * 100) + "%)";
+            if (btnPrev) btnPrev.disabled = current === 0;
+            if (btnNext) btnNext.disabled = current === totalSlides - 1;
+            dots.forEach(function (d, i) {
+                d.classList.toggle("fi-carousel-dot--active", i === current);
+            });
+        }
+
+        if (btnPrev) btnPrev.addEventListener("click", function () { goToSlide(current - 1); });
+        if (btnNext) btnNext.addEventListener("click", function () { goToSlide(current + 1); });
+        dots.forEach(function (d) {
+            d.addEventListener("click", function () { goToSlide(parseInt(d.dataset.index, 10)); });
+        });
+        goToSlide(0);
+
+        /* ============================================================
+           MODAL INSTRUCTOR
+        ============================================================ */
+        var modalShell     = document.getElementById("instModalShell");
+        var modalClose     = document.getElementById("instModalClose");
+        var modalAvatarWrap = document.getElementById("modalAvatarWrap");
+        var ICON_SRC = "{% static 'icons/user-circle-svgrepo-com.svg' %}";
+
+        function setField(id, val) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = val || "-";
+        }
+
+        function openModal(card) {
+            var d = card.dataset;
+            document.getElementById("instModalName").textContent = d.name || "-";
+            setField("mEmail",       d.email);
+            setField("mDoc",         d.doc ? "CC " + d.doc : "");
+            setField("mRole",        d.role);
+            setField("mContractNum", d.contractNum || d.contractnum);
+            setField("mCoord",       d.coord);
+            setField("mModality",    d.modality);
+            setField("mStart",       d.contractStart || d.contractstart);
+            setField("mEnd",         d.contractEnd || d.contractend);
+            setField("mLevel",       d.level);
+            setField("mUndergrad",   d.undergrad);
+            setField("mPostgrad",    d.postgrad);
+            setField("mSpecialty",   d.specialty);
+
+            if (modalAvatarWrap) {
+                if (d.avatar) {
+                    modalAvatarWrap.innerHTML = '<img src="' + d.avatar + '" alt="Foto">';
+                } else {
+                    modalAvatarWrap.innerHTML = '<span class="fi-inst-modal-avatar-icon"><img src="' + ICON_SRC + '" alt=""></span>';
+                }
+            }
+
+            if (modalShell) {
+                modalShell.classList.add("open");
+                modalShell.setAttribute("aria-hidden", "false");
+            }
+        }
+
+        function closeModal() {
+            if (modalShell) {
+                modalShell.classList.remove("open");
+                modalShell.setAttribute("aria-hidden", "true");
+            }
+        }
+
+        document.addEventListener("click", function (e) {
+            var btn = e.target.closest("[data-action='ver-instructor']");
+            if (btn) {
+                var card = btn.closest(".fi-inst-item");
+                if (card) openModal(card);
+            }
+        });
+
+        if (modalClose) modalClose.addEventListener("click", closeModal);
+        if (modalShell) {
+            modalShell.addEventListener("click", function (e) {
+                if (e.target === modalShell) closeModal();
+            });
+        }
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") closeModal();
+        });
+
+    })();
+    </script>
+
+    <nav class="navigation" aria-label="Navegacion principal">
+        <ul>
+            <li class="list {% if active_tab == 'inicio' %}active{% endif %}">
+                <a href="{% url 'dashboard' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/home-smile-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Inicio</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/magnifer-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Buscar</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'crear' %}active{% endif %}">
+                <a href="{% url 'matrix-upload' %}" data-spa="true" data-fab-toggle="true" aria-expanded="false">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/add-circle-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Cargar</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/bell-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Alertas</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'perfil' %}active{% endif %}">
+                <a href="{% url 'profile' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/user-circle-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Perfil</span>
+                </a>
+            </li>
+            <div class="indicator"></div>
+        </ul>
+    </nav>
+</body>
+</html>

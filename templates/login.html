@@ -1,0 +1,183 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempus | Login</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'icons/logo-sena-white.svg' %}">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Poppins", sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            background: #ffffff;
+            color: #122036;
+            padding: 24px;
+        }
+
+        .login-card {
+            width: min(420px, 100%);
+            border: 1px solid #e8edf3;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 18px 45px rgba(25, 51, 92, 0.1);
+        }
+
+        .login-card h1 {
+            font-size: 1.55rem;
+            margin-bottom: 8px;
+        }
+
+        .login-card p {
+            color: #4c5f7c;
+            margin-bottom: 18px;
+        }
+
+        .field {
+            margin-bottom: 14px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+        }
+
+        input {
+            width: 100%;
+            border: 1px solid #cfd9e6;
+            border-radius: 10px;
+            padding: 11px 12px;
+            font-size: 0.95rem;
+        }
+
+        .password-wrap {
+            position: relative;
+        }
+
+        .password-wrap input {
+            padding-right: 44px;
+        }
+
+        .toggle-password {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            margin: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .toggle-password img {
+            width: 22px;
+            height: 22px;
+            object-fit: contain;
+        }
+
+        .toggle-password .icon-hide {
+            display: none;
+        }
+
+        .toggle-password.is-visible .icon-show {
+            display: none;
+        }
+
+        .toggle-password.is-visible .icon-hide {
+            display: inline;
+        }
+
+        button {
+            width: 100%;
+            background: #00e36a;
+            border: none;
+            color: #063218;
+            font-weight: 700;
+            border-radius: 10px;
+            padding: 12px;
+            cursor: pointer;
+            margin-top: 6px;
+        }
+
+        .error-list {
+            list-style: none;
+            margin-bottom: 14px;
+            border: 1px solid #ffd2d2;
+            background: #fff0f0;
+            color: #912424;
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+    </style>
+</head>
+<body>
+    <section class="login-card">
+        <h1>Iniciar sesion</h1>
+        <p>Ingresa con tu correo admin para entrar al panel.</p>
+
+        {% if messages %}
+            <ul class="error-list">
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            <div class="field">
+                <label for="correo">Correo</label>
+                <input id="correo" name="correo" type="email" required placeholder="zeamartinezjohan@gmail.com">
+            </div>
+            <div class="field">
+                <label for="password">Contrasena</label>
+                <div class="password-wrap">
+                    <input id="password" name="password" type="password" required placeholder="********">
+                    <button type="button" class="toggle-password" id="togglePassword" aria-label="Mostrar contrasena" aria-pressed="false">
+                        <img class="icon-show" src="{% static 'icons/eye-svgrepo-com.svg' %}" alt="Mostrar contrasena">
+                        <img class="icon-hide" src="{% static 'icons/eye-closed-svgrepo-com.svg' %}" alt="Ocultar contrasena">
+                    </button>
+                </div>
+            </div>
+            <button type="submit">Entrar</button>
+        </form>
+    </section>
+
+    <script>
+        (function () {
+            const passwordInput = document.getElementById("password");
+            const toggleButton = document.getElementById("togglePassword");
+
+            if (!passwordInput || !toggleButton) {
+                return;
+            }
+
+            toggleButton.addEventListener("click", function () {
+                const isPassword = passwordInput.type === "password";
+                passwordInput.type = isPassword ? "text" : "password";
+                toggleButton.classList.toggle("is-visible", isPassword);
+                toggleButton.setAttribute("aria-pressed", String(isPassword));
+                toggleButton.setAttribute(
+                    "aria-label",
+                    isPassword ? "Ocultar contrasena" : "Mostrar contrasena"
+                );
+            });
+        })();
+    </script>
+</body>
+</html>

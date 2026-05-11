@@ -1,0 +1,179 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempus | Fichas</title>
+    {% now "U" as asset_version %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'icons/logo-sena-white.svg' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v={{ asset_version }}">
+    <link rel="stylesheet" href="{% static 'css/fichas.css' %}?v={{ asset_version }}">
+    <script src="{% static 'js/dashboard.js' %}?v={{ asset_version }}" defer></script>
+</head>
+<body>
+    <div class="sena-logo" aria-label="Logo SENA">
+        <img src="{% static 'icons/logo-sena.svg' %}" alt="Logo SENA">
+    </div>
+
+    <main class="dashboard-shell">
+        <header class="hero fi-hero">
+            <p class="eyebrow">Programacion</p>
+            <h1>Panel de fichas</h1>
+            <p class="hero-copy">Crea fichas y consulta el listado registrado.</p>
+        </header>
+
+        {% if messages %}
+            <div class="message-list" role="status" aria-live="polite">
+                {% for message in messages %}
+                    <article class="message-item {{ message.tags|default:'info' }}">
+                        <div>
+                            <strong>
+                                {% if message.tags == 'success' %}Exito{% elif message.tags == 'error' %}Error{% else %}Info{% endif %}
+                            </strong>
+                            <p>{{ message }}</p>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <section class="fi-grid" aria-label="Listado de fichas">
+            <article class="fi-card fi-card--cta">
+                <div class="fi-cta-head">
+                    <h2>Gestion de fichas</h2>
+                    <p>Crea una ficha nueva con su programa y version automaticamente vinculada.</p>
+                </div>
+                <a href="{% url 'fichas-create' %}" data-spa="true" class="fi-btn fi-btn--primary fi-btn--cta">+ Crear ficha</a>
+            </article>
+
+            <article class="fi-card">
+                <div class="fi-list-header">
+                    <h2>Listado de fichas</h2>
+                    <span>Total: {{ total_fichas }}</span>
+                </div>
+
+                {% if fichas %}
+                    <div class="fi-table-wrap">
+                        <table class="fi-table">
+                            <thead>
+                                <tr>
+                                    <th>Codigo ficha</th>
+                                    <th>Programa asociado</th>
+                                    <th>Nivel</th>
+                                    <th>Estado</th>
+                                    <th>CDF</th>
+                                    <th>Jornada</th>
+                                    <th>Version</th>
+                                    <th>Inicio lectiva</th>
+                                    <th>Fin lectiva</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ficha in fichas %}
+                                    <tr>
+                                        <td>
+                                            <div class="fi-code">{{ ficha.codigo }}</div>
+                                        </td>
+                                        <td>
+                                            <div class="fi-program-name">{{ ficha.matrix.program_name }}</div>
+                                            <div class="fi-program-meta">Cod. programa: {{ ficha.matrix.program_code }} | Cod. proyecto: {{ ficha.matrix.project_code }}</div>
+                                        </td>
+                                        <td>
+                                            <span class="fi-pill fi-pill--level">{{ ficha.matrix.level|default:"-" }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="fi-pill fi-pill--state {% if ficha.estado == 'abierta' %}fi-pill--success{% else %}fi-pill--neutral{% endif %}">
+                                                {{ ficha.get_estado_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if ficha.cdf_trimestres %}
+                                                {{ ficha.cdf_trimestres }} trimestres
+                                            {% else %}
+                                                Sin CDF
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if ficha.jornada == 'mixta_18_22' %}
+                                                Mixta 6:00 p.m. a 10:00 p.m.
+                                            {% elif ficha.jornada == 'mixta_16_22' %}
+                                                Mixta 4:00 p.m. a 10:00 p.m.
+                                            {% elif ficha.jornada == 'diurna' %}
+                                                Diurna 6:00 a.m. a 6:00 p.m.
+                                            {% elif ficha.jornada == 'fines_semana' %}
+                                                Fines de semana
+                                            {% else %}
+                                                {{ ficha.get_jornada_display }}
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ ficha.version_programa|default:'-' }}</td>
+                                        <td>{{ ficha.fecha_inicio_lectiva|date:"d/m/Y"|default:"-" }}</td>
+                                        <td>{{ ficha.fecha_fin_lectiva|date:"d/m/Y"|default:"-" }}</td>
+                                        <td>
+                                            <a href="{% url 'ficha-config' ficha.pk %}" data-spa="true" class="fi-config-btn" title="Configurar ficha" aria-label="Configurar ficha {{ ficha.codigo }}">
+                                                <img src="{% static 'icons/settings-svgrepo-com.svg' %}" alt="" aria-hidden="true">
+                                                <span>Configurar ficha</span>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="fi-empty">Aun no hay fichas registradas.</p>
+                {% endif %}
+            </article>
+        </section>
+    </main>
+
+    <nav class="navigation" aria-label="Navegacion principal">
+        <ul>
+            <li class="list {% if active_tab == 'inicio' %}active{% endif %}">
+                <a href="{% url 'dashboard' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/home-smile-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Inicio</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/magnifer-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Buscar</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'crear' %}active{% endif %}">
+                <a href="{% url 'matrix-upload' %}" data-spa="true" data-fab-toggle="true" aria-expanded="false">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/add-circle-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Cargar</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/bell-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Alertas</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'perfil' %}active{% endif %}">
+                <a href="{% url 'profile' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/user-circle-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Perfil</span>
+                </a>
+            </li>
+            <div class="indicator"></div>
+        </ul>
+    </nav>
+
+</body>
+</html>

@@ -1,0 +1,805 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempus | Crear ficha</title>
+    {% now "U" as asset_version %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'icons/logo-sena-white.svg' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v={{ asset_version }}">
+    <link rel="stylesheet" href="{% static 'css/fichas.css' %}?v={{ asset_version }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="{% static 'js/dashboard.js' %}?v={{ asset_version }}" defer></script>
+</head>
+<body>
+    <div class="sena-logo" aria-label="Logo SENA">
+        <img src="{% static 'icons/logo-sena.svg' %}" alt="Logo SENA">
+    </div>
+
+    <main class="dashboard-shell">
+        <header class="hero fi-hero fi-hero--create">
+            <div>
+                <p class="eyebrow">Programacion</p>
+                <h1>Crear ficha</h1>
+                <p class="hero-copy">Registra el codigo y vinculalo con un programa activo.</p>
+            </div>
+            <a href="{% url 'fichas-panel' %}" data-spa="true" class="fi-back-link">Volver al listado</a>
+        </header>
+
+        {% if messages %}
+            <div class="message-list" role="status" aria-live="polite">
+                {% for message in messages %}
+                    <article class="message-item {{ message.tags|default:'info' }}">
+                        <div>
+                            <strong>
+                                {% if message.tags == 'success' %}Exito{% elif message.tags == 'error' %}Error{% else %}Info{% endif %}
+                            </strong>
+                            <p>{{ message }}</p>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <section class="fi-grid" aria-label="Crear ficha">
+            <article class="fi-card fi-card--form">
+                <h2>Formulario de ficha</h2>
+                <form method="post" action="{% url 'fichas-create' %}" class="fi-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_ficha">
+                    <input type="hidden" id="fi-matrix-id" name="matrix_id" value="{{ form_data.matrix_id }}">
+                    <input type="hidden" id="fi-estado-input" name="estado" value="{{ form_data.estado }}">
+                    <input type="hidden" id="fi-cdf-input" name="cdf_trimestres" value="{{ form_data.cdf_trimestres }}">
+                    <input type="hidden" id="fi-jornada-input" name="jornada" value="{{ form_data.jornada }}">
+
+                    <div class="fi-field">
+                        <label for="fi-codigo">Codigo ficha</label>
+                        <input id="fi-codigo" name="codigo" type="text" maxlength="50" placeholder="Ej: 2891001" value="{{ form_data.codigo }}" required>
+                    </div>
+
+                    <div class="fi-field fi-field--full">
+                        <label>Seleccionar programa</label>
+                        <div class="fi-custom-select fi-custom-select--required" id="fi-custom-select" data-selected="{{ form_data.matrix_id }}" data-required-label="programa">
+                            <button type="button" class="fi-custom-trigger" id="fi-custom-trigger" aria-haspopup="listbox" aria-expanded="false">
+                                Selecciona programa y proyecto...
+                            </button>
+                            <div class="fi-custom-options" id="fi-custom-options" role="listbox" tabindex="-1">
+                                {% for matrix_data in matrices %}
+                                    {% with matrix=matrix_data.obj %}
+                                    <button
+                                        type="button"
+                                        class="fi-option"
+                                        role="option"
+                                        data-value="{{ matrix.id }}"
+                                        data-version="{{ matrix.version|default:'-' }}"
+                                        data-program-code="{{ matrix.program_code|default:'-' }}"
+                                        data-project-code="{{ matrix.project_code|default:'-' }}"
+                                        data-project-description="{{ matrix.project_description|default:'-' }}"
+                                        data-max-trimester="{{ matrix_data.max_trimester|default:'0' }}"
+                                    >
+                                        <span class="fi-option-title">{{ matrix.program_name }}</span>
+                                        <span class="fi-option-meta">{{ matrix.project_description|default:matrix.project_code }}</span>
+                                    </button>
+                                    {% endwith %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="fi-field">
+                        <label for="fi-version">Version del programa</label>
+                        <input id="fi-version" type="text" value="-" readonly>
+                    </div>
+
+                    <div class="fi-field">
+                        <label for="fi-program-code">Codigo de programa</label>
+                        <input id="fi-program-code" type="text" value="-" readonly>
+                    </div>
+
+                    <div class="fi-field fi-field--full">
+                        <label for="fi-project-code">Codigo de proyecto</label>
+                        <input id="fi-project-code" type="text" value="-" readonly>
+                    </div>
+
+                    <div class="fi-field fi-field--full">
+                        <label for="fi-project-description">Descripcion de proyecto</label>
+                        <input id="fi-project-description" type="text" value="-" readonly>
+                    </div>
+
+                    <div class="fi-dependent-fields" id="fi-dependent-fields">
+                        <div class="fi-field">
+                            <label>Estado de la ficha</label>
+                            <div class="fi-custom-select fi-custom-select--small fi-custom-select--required" id="fi-estado-select" data-selected="{{ form_data.estado }}" data-required-label="estado de la ficha">
+                                <button type="button" class="fi-custom-trigger" id="fi-estado-trigger" aria-haspopup="listbox" aria-expanded="false">
+                                    Selecciona estado...
+                                </button>
+                                <div class="fi-custom-options" id="fi-estado-options" role="listbox" tabindex="-1">
+                                    <button type="button" class="fi-option" role="option" data-value="abierta">
+                                        <span class="fi-option-title">Abierta</span>
+                                    </button>
+                                    <button type="button" class="fi-option" role="option" data-value="cerrada">
+                                        <span class="fi-option-title">Cerrada</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="fi-field">
+                            <label>CDF (Cadena de formacion)</label>
+                            <div class="fi-custom-select fi-custom-select--small" id="fi-cdf-select" data-selected="{{ form_data.cdf_trimestres }}">
+                                <button type="button" class="fi-custom-trigger" id="fi-cdf-trigger" aria-haspopup="listbox" aria-expanded="false">
+                                    Selecciona CDF...
+                                </button>
+                                <div class="fi-custom-options" id="fi-cdf-options" role="listbox" tabindex="-1">
+                                    <button type="button" class="fi-option" role="option" data-value="">
+                                        <span class="fi-option-title">No aplica</span>
+                                    </button>
+                                    <button type="button" class="fi-option" role="option" data-value="5">
+                                        <span class="fi-option-title">5 trimestres</span>
+                                    </button>
+                                    <button type="button" class="fi-option" role="option" data-value="6">
+                                        <span class="fi-option-title">6 trimestres</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="fi-field fi-field--full">
+                            <label>Jornada</label>
+                            <div class="fi-custom-select fi-custom-select--small fi-custom-select--required" id="fi-jornada-select" data-selected="{{ form_data.jornada }}" data-required-label="jornada">
+                                <button type="button" class="fi-custom-trigger" id="fi-jornada-trigger" aria-haspopup="listbox" aria-expanded="false">
+                                    Selecciona jornada...
+                                </button>
+                                <div class="fi-custom-options" id="fi-jornada-options" role="listbox" tabindex="-1">
+                                    <button type="button" class="fi-option" role="option" data-value="diurna">
+                                        <span class="fi-option-title">Diurna</span>
+                                    </button>
+                                    <button type="button" class="fi-option" role="option" data-value="mixta_18_22">
+                                        <span class="fi-option-title">Mixta de 18:00 a 22:00</span>
+                                    </button>
+                                    <button type="button" class="fi-option" role="option" data-value="mixta_16_22">
+                                        <span class="fi-option-title">Mixta de 16:00 a 22:00</span>
+                                    </button>
+                                    <button type="button" class="fi-option" role="option" data-value="fines_semana">
+                                        <span class="fi-option-title">Fines de semana</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="fi-field">
+                            <label for="fi-fecha-inicio">Fecha inicio lectiva</label>
+                            <div class="fi-date-wrap">
+                                <input id="fi-fecha-inicio" name="fecha_inicio_lectiva" type="date" value="{{ form_data.fecha_inicio_lectiva }}" required>
+                            </div>
+                        </div>
+
+                        <div class="fi-field">
+                            <label for="fi-fecha-fin">Fecha fin lectiva</label>
+                            <div class="fi-date-wrap">
+                                <input id="fi-fecha-fin" name="fecha_fin_lectiva" type="date" value="{{ form_data.fecha_fin_lectiva }}" required>
+                            </div>
+                        </div>
+
+                        <section class="fi-schedule" id="fi-schedule" aria-label="Horario base semanal">
+                            <div class="fi-schedule-head">
+                                <h3>Horario base semanal</h3>
+                                <p>Las horas se completan automaticamente segun la jornada seleccionada.</p>
+                            </div>
+                            <div class="fi-schedule-grid" id="fi-schedule-grid"></div>
+                        </section>
+                    </div>
+
+                    <div class="fi-help" id="fi-cdf-help">Selecciona CDF para filtrar programas por 5 o 6 trimestres.</div>
+
+                    <div class="fi-actions">
+                        <button class="fi-btn fi-btn--primary" type="submit">Guardar ficha</button>
+                    </div>
+                </form>
+            </article>
+        </section>
+    </main>
+
+    <nav class="navigation" aria-label="Navegacion principal">
+        <ul>
+            <li class="list {% if active_tab == 'inicio' %}active{% endif %}">
+                <a href="{% url 'dashboard' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/home-smile-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Inicio</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/magnifer-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Buscar</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'crear' %}active{% endif %}">
+                <a href="{% url 'matrix-upload' %}" data-spa="true" data-fab-toggle="true" aria-expanded="false">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/add-circle-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Cargar</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/bell-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Alertas</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'perfil' %}active{% endif %}">
+                <a href="{% url 'profile' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/user-circle-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Perfil</span>
+                </a>
+            </li>
+            <div class="indicator"></div>
+        </ul>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        (function () {
+            var custom = document.getElementById('fi-custom-select');
+            var trigger = document.getElementById('fi-custom-trigger');
+            var optionsWrap = document.getElementById('fi-custom-options');
+            var hiddenInput = document.getElementById('fi-matrix-id');
+            var versionInput = document.getElementById('fi-version');
+            var programCodeInput = document.getElementById('fi-program-code');
+            var projectCodeInput = document.getElementById('fi-project-code');
+            var projectDescriptionInput = document.getElementById('fi-project-description');
+            var dependentFields = document.getElementById('fi-dependent-fields');
+            var cdfHelp = document.getElementById('fi-cdf-help');
+            var cdfHidden = document.getElementById('fi-cdf-input');
+            var jornadaHidden = document.getElementById('fi-jornada-input');
+            var form = document.querySelector('.fi-form');
+            var schedule = document.getElementById('fi-schedule');
+            var scheduleGrid = document.getElementById('fi-schedule-grid');
+
+            var scheduleMap = {
+                diurna: {
+                    lunes: ['06:00 a.m.', '06:00 p.m.'],
+                    martes: ['06:00 a.m.', '06:00 p.m.'],
+                    miercoles: ['06:00 a.m.', '06:00 p.m.'],
+                    jueves: ['06:00 a.m.', '06:00 p.m.'],
+                    viernes: ['06:00 a.m.', '06:00 p.m.'],
+                },
+                mixta_18_22: {
+                    lunes: ['06:00 p.m.', '10:00 p.m.'],
+                    martes: ['06:00 p.m.', '10:00 p.m.'],
+                    miercoles: ['06:00 p.m.', '10:00 p.m.'],
+                    jueves: ['06:00 p.m.', '10:00 p.m.'],
+                    viernes: ['06:00 p.m.', '10:00 p.m.'],
+                    sabado: ['06:00 a.m.', '06:00 p.m.'],
+                },
+                mixta_16_22: {
+                    lunes: ['04:00 p.m.', '10:00 p.m.'],
+                    martes: ['04:00 p.m.', '10:00 p.m.'],
+                    miercoles: ['04:00 p.m.', '10:00 p.m.'],
+                    jueves: ['04:00 p.m.', '10:00 p.m.'],
+                    viernes: ['04:00 p.m.', '10:00 p.m.'],
+                    sabado: ['06:00 a.m.', '06:00 p.m.'],
+                },
+                fines_semana: {
+                    viernes: ['06:00 p.m.', '10:00 p.m.'],
+                    sabado: ['06:00 a.m.', '06:00 p.m.'],
+                    domingo: ['06:00 a.m.', '06:00 p.m.'],
+                },
+            };
+
+            var days = [
+                ['lunes', 'Lunes'],
+                ['martes', 'Martes'],
+                ['miercoles', 'Miercoles'],
+                ['jueves', 'Jueves'],
+                ['viernes', 'Viernes'],
+                ['sabado', 'Sabado'],
+                ['domingo', 'Domingo'],
+            ];
+
+            if (!custom || !trigger || !optionsWrap || !hiddenInput) return;
+
+            function setupSimpleCustomSelect(selectId, hiddenId, emptyLabel, labelsMap, onChange) {
+                var wrap = document.getElementById(selectId);
+                var hidden = document.getElementById(hiddenId);
+                if (!wrap || !hidden) return null;
+
+                var btn = wrap.querySelector('.fi-custom-trigger');
+                var list = wrap.querySelector('.fi-custom-options');
+
+                function close() {
+                    wrap.classList.remove('is-open');
+                    btn.setAttribute('aria-expanded', 'false');
+                }
+
+                function open() {
+                    wrap.classList.add('is-open');
+                    btn.setAttribute('aria-expanded', 'true');
+                    list.focus();
+                }
+
+                function paintCurrent() {
+                    var value = hidden.value || '';
+                    btn.textContent = labelsMap[value] || emptyLabel;
+                    wrap.querySelectorAll('.fi-option').forEach(function (opt) {
+                        opt.classList.toggle('is-selected', opt.getAttribute('data-value') === value);
+                    });
+                    wrap.classList.toggle('is-empty', !value);
+                }
+
+                btn.addEventListener('click', function () {
+                    if (wrap.classList.contains('is-open')) close();
+                    else open();
+                });
+
+                wrap.querySelectorAll('.fi-option').forEach(function (opt) {
+                    opt.addEventListener('click', function () {
+                        hidden.value = opt.getAttribute('data-value') || '';
+                        paintCurrent();
+                        close();
+                        if (typeof onChange === 'function') onChange(hidden.value);
+                    });
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!wrap.contains(event.target)) {
+                        close();
+                    }
+                });
+
+                paintCurrent();
+                return {
+                    refresh: paintCurrent,
+                };
+            }
+
+            function applyProgramFilterByCdf(cdfValue) {
+                var selectedId = hiddenInput.value;
+                var selectedOptionStillVisible = false;
+                var firstVisibleOption = null;
+                var selectedOption = selectedId ? custom.querySelector('.fi-option[data-value="' + selectedId + '"]') : null;
+
+                custom.querySelectorAll('.fi-option').forEach(function (option) {
+                    var maxTrimester = option.getAttribute('data-max-trimester') || '0';
+                    var isVisible = !cdfValue || maxTrimester === cdfValue;
+                    option.style.display = isVisible ? '' : 'none';
+
+                    if (isVisible && !firstVisibleOption) {
+                        firstVisibleOption = option;
+                    }
+
+                    if (isVisible && option.getAttribute('data-value') === selectedId) {
+                        selectedOptionStillVisible = true;
+                    }
+                });
+
+                if (!selectedOptionStillVisible) {
+                    custom.querySelectorAll('.fi-option').forEach(function (btn) {
+                        btn.classList.remove('is-selected');
+                    });
+
+                    if (firstVisibleOption) {
+                        hiddenInput.value = firstVisibleOption.getAttribute('data-value') || '';
+                        firstVisibleOption.classList.add('is-selected');
+                        fillFromOption(firstVisibleOption);
+                    } else {
+                        // Si no hay coincidencias para el CDF, no borramos datos ya mostrados.
+                        if (selectedOption) {
+                            selectedOption.classList.add('is-selected');
+                            fillFromOption(selectedOption);
+                        }
+                    }
+                }
+
+                if (!cdfValue) {
+                    cdfHelp.textContent = 'Selecciona CDF para filtrar programas por 5 o 6 trimestres.';
+                } else if (!firstVisibleOption) {
+                    cdfHelp.textContent = 'No hay programas con ' + cdfValue + ' trimestres. Se mantiene la seleccion actual.';
+                } else {
+                    cdfHelp.textContent = 'Mostrando programas con ' + cdfValue + ' trimestres segun matriz.';
+                }
+            }
+
+            function renderSchedule(jornadaValue) {
+                if (!schedule || !scheduleGrid) return;
+
+                scheduleGrid.innerHTML = '';
+                if (!jornadaValue || !scheduleMap[jornadaValue]) {
+                    schedule.classList.remove('is-visible');
+                    return;
+                }
+
+                schedule.classList.add('is-visible');
+                days.forEach(function (dayInfo) {
+                    var key = dayInfo[0];
+                    var label = dayInfo[1];
+                    var slot = scheduleMap[jornadaValue][key] || ['', ''];
+
+                    var card = document.createElement('article');
+                    card.className = 'fi-schedule-day' + (slot[0] ? '' : ' fi-schedule-day--empty');
+                    card.innerHTML = [
+                        '<h4>' + label + '</h4>',
+                        '<div class="fi-schedule-row"><span>Hora inicio</span><strong>' + (slot[0] || 'No aplica') + '</strong></div>',
+                        '<div class="fi-schedule-row"><span>Hora fin</span><strong>' + (slot[1] || 'No aplica') + '</strong></div>'
+                    ].join('');
+                    scheduleGrid.appendChild(card);
+                });
+            }
+
+            function validateRequiredCustomSelects() {
+                var valid = true;
+                document.querySelectorAll('.fi-custom-select--required').forEach(function (wrap) {
+                    var selectedValue = wrap.getAttribute('data-selected') || '';
+                    var hidden = null;
+
+                    if (wrap.id === 'fi-custom-select') hidden = hiddenInput;
+                    if (wrap.id === 'fi-estado-select') hidden = document.getElementById('fi-estado-input');
+                    if (wrap.id === 'fi-jornada-select') hidden = document.getElementById('fi-jornada-input');
+
+                    var hasValue = hidden && hidden.value;
+                    wrap.classList.toggle('fi-custom-select--invalid', !hasValue);
+                    if (!hasValue) {
+                        valid = false;
+                    }
+                });
+                return valid;
+            }
+
+            function fillFromOption(optionButton) {
+                if (!optionButton) {
+                    trigger.textContent = 'Selecciona programa y proyecto...';
+                    versionInput.value = '-';
+                    programCodeInput.value = '-';
+                    projectCodeInput.value = '-';
+                    projectDescriptionInput.value = '-';
+                    dependentFields.classList.remove('is-visible');
+                    return;
+                }
+
+                trigger.textContent = optionButton.querySelector('.fi-option-title').textContent;
+                versionInput.value = optionButton.getAttribute('data-version') || '-';
+                programCodeInput.value = optionButton.getAttribute('data-program-code') || '-';
+                projectCodeInput.value = optionButton.getAttribute('data-project-code') || '-';
+                projectDescriptionInput.value = optionButton.getAttribute('data-project-description') || '-';
+                dependentFields.classList.add('is-visible');
+            }
+
+            function closeOptions() {
+                custom.classList.remove('is-open');
+                trigger.setAttribute('aria-expanded', 'false');
+            }
+
+            function openOptions() {
+                custom.classList.add('is-open');
+                trigger.setAttribute('aria-expanded', 'true');
+                optionsWrap.focus();
+            }
+
+            trigger.addEventListener('click', function () {
+                if (custom.classList.contains('is-open')) {
+                    closeOptions();
+                } else {
+                    openOptions();
+                }
+            });
+
+            custom.querySelectorAll('.fi-option').forEach(function (option) {
+                option.addEventListener('click', function () {
+                    hiddenInput.value = option.getAttribute('data-value') || '';
+                    custom.querySelectorAll('.fi-option').forEach(function (btn) {
+                        btn.classList.remove('is-selected');
+                    });
+                    option.classList.add('is-selected');
+                    custom.setAttribute('data-selected', hiddenInput.value);
+                    fillFromOption(option);
+                    closeOptions();
+                });
+            });
+
+            document.addEventListener('click', function (event) {
+                if (!custom.contains(event.target)) {
+                    closeOptions();
+                }
+            });
+
+            var selectedValue = custom.getAttribute('data-selected') || '';
+            if (selectedValue) {
+                var selectedOption = custom.querySelector('.fi-option[data-value="' + selectedValue + '"]');
+                if (selectedOption) {
+                    selectedOption.classList.add('is-selected');
+                    hiddenInput.value = selectedValue;
+                    custom.setAttribute('data-selected', selectedValue);
+                    fillFromOption(selectedOption);
+                }
+            }
+
+            setupSimpleCustomSelect(
+                'fi-estado-select',
+                'fi-estado-input',
+                'Selecciona estado...',
+                {
+                    'abierta': 'Abierta',
+                    'cerrada': 'Cerrada',
+                }
+            );
+
+            setupSimpleCustomSelect(
+                'fi-jornada-select',
+                'fi-jornada-input',
+                'Selecciona jornada...',
+                {
+                    'diurna': 'Diurna',
+                    'mixta_18_22': 'Mixta de 18:00 a 22:00',
+                    'mixta_16_22': 'Mixta de 16:00 a 22:00',
+                    'fines_semana': 'Fines de semana',
+                }
+                ,
+                function (value) {
+                    renderSchedule(value);
+                }
+            );
+
+            setupSimpleCustomSelect(
+                'fi-cdf-select',
+                'fi-cdf-input',
+                'Selecciona CDF...',
+                {
+                    '': 'No aplica',
+                    '5': '5 trimestres',
+                    '6': '6 trimestres',
+                },
+                function (value) {
+                    applyProgramFilterByCdf(value);
+                }
+            );
+
+            applyProgramFilterByCdf(cdfHidden ? cdfHidden.value : '');
+            if (!hiddenInput.value) {
+                fillFromOption(null);
+            } else {
+                dependentFields.classList.add('is-visible');
+            }
+
+            renderSchedule(jornadaHidden ? jornadaHidden.value : '');
+
+            // Marcar campos de fecha con clase has-value si tienen valor
+            // Inicializar Flatpickr en campos de fecha
+            var fpLocale = {
+                firstDayOfWeek: 1,
+                weekdays: {
+                    shorthand: ['Do','Lu','Ma','Mi','Ju','Vi','Sa'],
+                    longhand:  ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+                },
+                months: {
+                    shorthand: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+                    longhand:  ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+                },
+                rangeSeparator: ' a ',
+                weekAbbreviation: 'Sem',
+                scrollTitle: 'Desplazar para cambiar',
+                toggleTitle: 'Haz clic para cambiar',
+                time_24hr: true,
+            };
+
+            function closeDateMenus(cal) {
+                if (!cal) return;
+                cal.querySelectorAll('.fp-select-menu').forEach(function (menu) {
+                    menu.classList.remove('is-open');
+                });
+            }
+
+            function buildDateHeaderSelector(instance) {
+                var cal = instance.calendarContainer;
+                if (!cal || cal.querySelector('.fp-custom-head')) return;
+
+                var nativeCurrent = cal.querySelector('.flatpickr-current-month');
+                if (!nativeCurrent) return;
+
+                var monthNames = fpLocale.months.longhand;
+                var monthBtn = document.createElement('button');
+                monthBtn.type = 'button';
+                monthBtn.className = 'fp-select-btn fp-select-btn--month';
+
+                var yearBtn = document.createElement('button');
+                yearBtn.type = 'button';
+                yearBtn.className = 'fp-select-btn fp-select-btn--year';
+
+                var monthMenu = document.createElement('div');
+                monthMenu.className = 'fp-select-menu fp-select-menu--month';
+
+                var yearMenu = document.createElement('div');
+                yearMenu.className = 'fp-select-menu fp-select-menu--year';
+
+                monthNames.forEach(function (name, index) {
+                    var opt = document.createElement('button');
+                    opt.type = 'button';
+                    opt.className = 'fp-select-option';
+                    opt.textContent = name;
+                    opt.setAttribute('data-month', String(index));
+                    opt.addEventListener('mousedown', function (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        var targetMonth = Number(opt.getAttribute('data-month'));
+                        var monthDiff = targetMonth - instance.currentMonth;
+                        instance.changeMonth(monthDiff, true);
+                        closeDateMenus(cal);
+                    });
+                    monthMenu.appendChild(opt);
+                });
+
+                function rebuildYearOptions() {
+                    var todayYear = new Date().getFullYear();
+                    var startYear = todayYear - 5;
+                    var endYear = todayYear + 15;
+                    yearMenu.innerHTML = '';
+
+                    for (var y = startYear; y <= endYear; y += 1) {
+                        var yOpt = document.createElement('button');
+                        yOpt.type = 'button';
+                        yOpt.className = 'fp-select-option';
+                        yOpt.textContent = String(y);
+                        yOpt.setAttribute('data-year', String(y));
+                        yOpt.addEventListener('mousedown', function (event) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            var targetYear = Number(this.getAttribute('data-year'));
+                            instance.changeYear(targetYear);
+                            instance.redraw();
+                            closeDateMenus(cal);
+                        });
+                        yearMenu.appendChild(yOpt);
+                    }
+                }
+
+                function refreshHeaderState() {
+                    monthBtn.textContent = monthNames[instance.currentMonth] + ' ▾';
+                    yearBtn.textContent = String(instance.currentYear) + ' ▾';
+
+                    monthMenu.querySelectorAll('.fp-select-option').forEach(function (opt) {
+                        opt.classList.toggle('is-selected', Number(opt.getAttribute('data-month')) === instance.currentMonth);
+                    });
+
+                    yearMenu.querySelectorAll('.fp-select-option').forEach(function (opt) {
+                        opt.classList.toggle('is-selected', Number(opt.getAttribute('data-year')) === instance.currentYear);
+                    });
+                }
+
+                rebuildYearOptions();
+
+                var head = document.createElement('div');
+                head.className = 'fp-custom-head';
+
+                var monthWrap = document.createElement('div');
+                monthWrap.className = 'fp-select-wrap';
+                monthWrap.appendChild(monthBtn);
+                monthWrap.appendChild(monthMenu);
+
+                var yearWrap = document.createElement('div');
+                yearWrap.className = 'fp-select-wrap';
+                yearWrap.appendChild(yearBtn);
+                yearWrap.appendChild(yearMenu);
+
+                head.appendChild(monthWrap);
+                head.appendChild(yearWrap);
+                nativeCurrent.appendChild(head);
+
+                monthBtn.addEventListener('mousedown', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    yearMenu.classList.remove('is-open');
+                    monthMenu.classList.toggle('is-open');
+                });
+
+                yearBtn.addEventListener('mousedown', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    monthMenu.classList.remove('is-open');
+                    rebuildYearOptions();
+                    refreshHeaderState();
+                    yearMenu.classList.toggle('is-open');
+                });
+
+                cal.addEventListener('click', function (event) {
+                    if (!event.target.closest('.fp-select-wrap')) {
+                        closeDateMenus(cal);
+                    }
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!cal.contains(event.target)) {
+                        closeDateMenus(cal);
+                    }
+                });
+
+                refreshHeaderState();
+
+                instance.config.onMonthChange.push(function () {
+                    refreshHeaderState();
+                });
+
+                instance.config.onYearChange.push(function () {
+                    rebuildYearOptions();
+                    refreshHeaderState();
+                });
+            }
+
+            function makeFP(id) {
+                var inp = document.getElementById(id);
+                if (!inp) return;
+                if (typeof flatpickr !== 'function') return;
+                flatpickr(inp, {
+                    locale: fpLocale,
+                    dateFormat: 'Y-m-d',
+                    altInput: true,
+                    altFormat: 'd/m/Y',
+                    defaultDate: inp.value || null,
+                    disableMobile: true,
+                    monthSelectorType: 'static',
+                    static: false,
+                    nextArrow: '<span aria-hidden="true">›</span>',
+                    prevArrow: '<span aria-hidden="true">‹</span>',
+                    onReady: function(selectedDates, dateStr, instance) {
+                        buildDateHeaderSelector(instance);
+
+                                                // Aplicar has-value al altInput si hay fecha inicial
+                                                if (instance.altInput && selectedDates.length > 0) {
+                                                    instance.altInput.classList.add('has-value');
+                                                }
+
+                        var footer = document.createElement('div');
+                        footer.className = 'fp-footer';
+                        var btnClear = document.createElement('button');
+                        btnClear.type = 'button';
+                        btnClear.textContent = 'Borrar';
+                        btnClear.className = 'fp-footer-btn fp-footer-btn--clear';
+                        btnClear.addEventListener('click', function() { instance.clear(); instance.close(); });
+                        var btnToday = document.createElement('button');
+                        btnToday.type = 'button';
+                        btnToday.textContent = 'Hoy';
+                        btnToday.className = 'fp-footer-btn fp-footer-btn--today';
+                        btnToday.addEventListener('click', function() { instance.setDate(new Date()); instance.close(); });
+                        footer.appendChild(btnClear);
+                        footer.appendChild(btnToday);
+                        instance.calendarContainer.appendChild(footer);
+                    },
+                    onChange: function(selectedDates, dateStr, instance) {
+                        // altInput es el input visible; inp es el oculto con el valor para POST
+                        var altInp = instance && instance.altInput ? instance.altInput : null;
+                        if (altInp && altInp.classList.contains('flatpickr-input')) {
+                            altInp.classList.toggle('has-value', !!dateStr);
+                        }
+                        inp.classList.toggle('has-value', !!dateStr);
+                    },
+                });
+                // Sincronizar has-value inicial
+                if (inp.value) {
+                    inp.classList.add('has-value');
+                    // altInput aún no existe al momento del init, se aplica en onReady
+                }
+            }
+
+            makeFP('fi-fecha-inicio');
+            makeFP('fi-fecha-fin');
+
+            if (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!validateRequiredCustomSelects()) {
+                        event.preventDefault();
+                        cdfHelp.textContent = 'Completa programa, estado y jornada antes de guardar la ficha.';
+                    }
+                });
+            }
+        }());
+    </script>
+</body>
+</html>

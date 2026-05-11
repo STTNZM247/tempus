@@ -1,0 +1,64 @@
+.matrix-detail-page .dashboard-shell {
+    width: min(1460px, 98vw);
+    padding-top: 16px;
+}
+
+/* ── Botón volver ── */
+.mdetail-back-row {
+    margin-bottom: 14px;
+}
+
+.mdetail-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #168536;
+    text-decoration: none;
+    padding: 6px 14px;
+    border: 1px solid #c5e8d0;
+    border-radius: 999px;
+    background: #f0fbf4;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.mdetail-back-btn:hover {
+    background: #dff5e8;
+    border-color: #168536;
+}
+
+/* ── Badge de trimestres en meta ── */
+.mdetail-trimester-badge {
+    color: #0f5fc0;
+}
+
+/* ── Pill azul ── */
+.matrix-pill--blue {
+    background: #e8f0fb;
+    color: #0f5fc0;
+}
+
+/* ── Botón eliminar en toolbar ── */
+.mdetail-delete-form {
+    margin: 0;
+}
+
+.mdetail-delete-btn {
+    background: none;
+    border: 1px solid #f4b8b8;
+    color: #c0392b;
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}
+
+.mdetail-delete-btn:hover {
+    background: #fff0f0;
+    border-color: #e74c3c;
+    color: #922222;
+}

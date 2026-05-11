@@ -1,0 +1,231 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempus | {{ matrix.program_name }}</title>
+    {% now "U" as asset_version %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'icons/logo-sena-white.svg' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v={{ asset_version }}">
+    <link rel="stylesheet" href="{% static 'css/matrix.css' %}?v={{ asset_version }}">
+    <link rel="stylesheet" href="{% static 'css/matrix_detail.css' %}?v={{ asset_version }}">
+    <script src="{% static 'js/dashboard.js' %}?v={{ asset_version }}" defer></script>
+</head>
+<body class="matrix-page matrix-detail-page">
+    <div class="sena-logo" aria-label="Logo SENA">
+        <img src="{% static 'icons/logo-sena.svg' %}" alt="Logo SENA">
+    </div>
+
+    <main class="dashboard-shell">
+
+        <div class="mdetail-back-row">
+            <a class="mdetail-back-btn" href="{% url 'matrix-list' %}" data-spa="true">
+                ← Volver a matrices
+            </a>
+        </div>
+
+        {% if messages %}
+            <ul class="message-list">
+                {% for message in messages %}
+                    <li class="message-item {{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <section class="matrix-preview-shell">
+
+            <section class="matrix-header-card">
+                <p class="matrix-program-title">{{ matrix.program_name }}</p>
+                <p class="matrix-project-chip">{{ matrix.project_description }}</p>
+                <div class="matrix-meta-line">
+                    <span>Código: <strong>{{ matrix.program_code|default:"-" }}</strong></span>
+                    <span>Versión: <strong>{{ matrix.version|default:"-" }}</strong></span>
+                    <span>Nivel: <strong>{{ matrix.level|default:"-" }}</strong></span>
+                    <span>Proyecto: <strong>{{ matrix.project_code|default:"-" }}</strong></span>
+                    {% if max_trimester %}
+                        <span>Trimestres: <strong class="mdetail-trimester-badge">{{ max_trimester }}</strong></span>
+                    {% endif %}
+                </div>
+            </section>
+
+            <section class="matrix-toolbar-card">
+                <div class="matrix-toolbar-left">
+                    <span class="matrix-pill">{{ matrix.competency_count }} competencias</span>
+                    <span class="matrix-pill">{{ matrix.result_count }} resultados</span>
+                    {% if max_trimester %}
+                        <span class="matrix-pill matrix-pill--blue">{{ max_trimester }} trimestres</span>
+                    {% endif %}
+                </div>
+                <div class="matrix-toolbar-right">
+                    <input id="matrixSearch" class="matrix-search" type="search" placeholder="Buscar competencia o resultado...">
+                    <form method="post" action="{% url 'matrix-delete' matrix.pk %}" class="mdetail-delete-form">
+                        {% csrf_token %}
+                        <button
+                            type="button"
+                            class="mdetail-delete-btn"
+                            data-program="{{ matrix.program_name|escapejs }}"
+                            data-results="{{ matrix.result_count }}"
+                            data-competencies="{{ matrix.competency_count }}"
+                        >
+                            Eliminar matriz
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <section class="matrix-table-card">
+                <div class="result-table-wrap">
+                    <table class="matrix-table" id="matrixPreviewTable">
+                        <colgroup>
+                            <col class="matrix-col-competency">
+                            <col class="matrix-col-code">
+                            <col class="matrix-col-duration">
+                            <col class="matrix-col-result">
+                            <col class="matrix-col-hmax">
+                            <col class="matrix-col-hmin">
+                            <col class="matrix-col-trimester">
+                            <col class="matrix-col-hsem">
+                            <col class="matrix-col-htrim">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th class="matrix-head-text">Competencia</th>
+                                <th class="matrix-head-text">Código</th>
+                                <th class="matrix-head-text">Duración (H)</th>
+                                <th class="matrix-head-text">Resultado de aprendizaje</th>
+                                <th class="matrix-head-num">H Max</th>
+                                <th class="matrix-head-num">H Min</th>
+                                <th class="matrix-head-num">Trimestre</th>
+                                <th class="matrix-head-num">H/Sem</th>
+                                <th class="matrix-head-num">H/Trim</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for competency in matrix.competencies.all %}
+                                {% with results=competency.results.all %}
+                                {% if results %}
+                                    {% for result in results %}
+                                        <tr class="matrix-row" data-search="{{ competency.name|lower }} {{ competency.code|lower }} {{ result.name|lower }}">
+                                            {% if forloop.first %}
+                                                <td rowspan="{{ results|length }}" class="matrix-competency-cell">{{ competency.name }}</td>
+                                                <td rowspan="{{ results|length }}" class="matrix-code-cell">{{ competency.code|default:"-" }}</td>
+                                                <td rowspan="{{ results|length }}" class="matrix-num-cell">{{ competency.hours|default:"-" }}</td>
+                                            {% endif %}
+                                            <td class="matrix-result-cell">{{ result.name }}</td>
+                                            <td class="matrix-num-cell">{{ result.hours_max|default:"-" }}</td>
+                                            <td class="matrix-num-cell">{{ result.hours_min|default:"-" }}</td>
+                                            <td class="matrix-num-cell">{{ result.trimester|default:"-" }}</td>
+                                            <td class="matrix-num-cell">{{ result.weekly_hours|default:"-" }}</td>
+                                            <td class="matrix-num-cell">{{ result.trimester_hours|default:"-" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr class="matrix-row" data-search="{{ competency.name|lower }} {{ competency.code|lower }}">
+                                        <td class="matrix-competency-cell">{{ competency.name }}</td>
+                                        <td class="matrix-code-cell">{{ competency.code|default:"-" }}</td>
+                                        <td class="matrix-num-cell">{{ competency.hours|default:"-" }}</td>
+                                        <td colspan="6" style="color:#9aabb8;font-style:italic;padding:8px;">Sin resultados registrados</td>
+                                    </tr>
+                                {% endif %}
+                                {% endwith %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </section>
+    </main>
+
+    <nav class="navigation" aria-label="Navegacion principal">
+        <ul>
+            <li class="list {% if active_tab == 'inicio' %}active{% endif %}">
+                <a href="{% url 'dashboard' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/home-smile-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Inicio</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/magnifer-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Buscar</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'crear' %}active{% endif %}">
+                <a href="{% url 'matrix-upload' %}" data-spa="true" data-fab-toggle="true" aria-expanded="false">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/add-circle-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Cargar</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/bell-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Alertas</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'perfil' %}active{% endif %}">
+                <a href="{% url 'profile' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true"><img src="{% static 'icons/user-circle-svgrepo-com.svg' %}" alt=""></span>
+                    <span class="text">Perfil</span>
+                </a>
+            </li>
+            <div class="indicator"></div>
+        </ul>
+    </nav>
+
+    <script>
+        (function () {
+            const searchInput = document.getElementById("matrixSearch");
+            const rows = Array.from(document.querySelectorAll(".matrix-row"));
+            if (!searchInput || rows.length === 0) return;
+
+            const groups = [];
+            let currentGroup = null;
+
+            rows.forEach(function (row) {
+                if (row.querySelector(".matrix-competency-cell")) {
+                    currentGroup = { rows: [], search: "" };
+                    groups.push(currentGroup);
+                }
+                if (!currentGroup) {
+                    currentGroup = { rows: [], search: "" };
+                    groups.push(currentGroup);
+                }
+                currentGroup.rows.push(row);
+                currentGroup.search += " " + (row.dataset.search || row.textContent.toLowerCase());
+            });
+
+            searchInput.addEventListener("input", function () {
+                const term = searchInput.value.trim().toLowerCase();
+                groups.forEach(function (group) {
+                    const visible = !term || group.search.includes(term);
+                    group.rows.forEach(function (row) {
+                        row.style.display = visible ? "" : "none";
+                    });
+                });
+            });
+
+            // Confirmación eliminar
+            const deleteBtn = document.querySelector(".mdetail-delete-btn");
+            if (deleteBtn) {
+                deleteBtn.addEventListener("click", function () {
+                    const program = deleteBtn.dataset.program;
+                    const results = deleteBtn.dataset.results;
+                    const competencies = deleteBtn.dataset.competencies;
+                    const confirmed = window.confirm(
+                        "¿Eliminar la matriz \"" + program + "\"?\n\n" +
+                        "Se borrarán permanentemente:\n" +
+                        "  • " + competencies + " competencias\n" +
+                        "  • " + results + " resultados de aprendizaje\n\n" +
+                        "Esta acción no se puede deshacer."
+                    );
+                    if (confirmed) {
+                        deleteBtn.closest("form").submit();
+                    }
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

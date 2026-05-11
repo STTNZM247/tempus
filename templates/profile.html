@@ -1,0 +1,292 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempus | Perfil</title>
+    {% now "U" as asset_version %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'icons/logo-sena-white.svg' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v={{ asset_version }}">
+    <link rel="stylesheet" href="{% static 'css/profile.css' %}?v={{ asset_version }}">
+    <script src="{% static 'js/dashboard.js' %}?v={{ asset_version }}" defer></script>
+</head>
+<body>
+    <div class="sena-logo" aria-label="Logo SENA">
+        <img src="{% static 'icons/logo-sena.svg' %}" alt="Logo SENA">
+    </div>
+
+    <main class="dashboard-shell">
+        <div class="pf-wrap">
+            {% if messages %}
+                {% for msg in messages %}
+                    <div class="pf-flash pf-flash--{% if msg.tags == 'error' %}error{% else %}success{% endif %}" role="alert">
+                        {{ msg }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% with display_name=request.user.get_full_name|default:request.user.get_username %}
+            <section class="pf-profile-card">
+                <div class="pf-cover" aria-hidden="true">
+                    <img src="{% static 'icons/settings-svgrepo-com.svg' %}" alt="">
+                    <img src="{% static 'icons/user-svgrepo-com.svg' %}" alt="">
+                    <img src="{% static 'icons/archive-up-svgrepo-com.svg' %}" alt="">
+                </div>
+
+                <div class="pf-avatar-wrap">
+                    <div class="pf-avatar-ring">
+                        {% if avatar_url %}
+                            <img src="{{ avatar_url }}" alt="Foto de perfil" class="pf-avatar-img" id="pf-avatar-preview">
+                        {% else %}
+                            <div class="pf-avatar-fallback" id="pf-avatar-preview-fallback">
+                                {% if request.user.first_name %}{{ request.user.first_name|slice:":1" }}{% if request.user.last_name %}{{ request.user.last_name|slice:":1" }}{% endif %}{% else %}{{ request.user.get_username|slice:":2" }}{% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <form method="post" action="{% url 'profile' %}" enctype="multipart/form-data" id="pf-avatar-form" class="pf-avatar-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="avatar">
+                        <input type="file" name="avatar" id="pf-avatar-input" accept="image/*" class="pf-hidden-input">
+                        <button type="button" class="pf-avatar-edit" id="pf-avatar-trigger" aria-label="Cambiar foto">
+                            <img src="{% static 'icons/upload-svgrepo-com.svg' %}" alt="">
+                        </button>
+                    </form>
+                </div>
+
+                <div class="pf-headline">
+                    <h1>{{ display_name }}</h1>
+                    <p>
+                        {% if request.user.is_superuser or request.user.is_staff %}Administrador{% elif contractor %}Contratista{% elif plant %}Planta{% else %}Usuario{% endif %}
+                        - Usuario CIDE
+                    </p>
+                </div>
+
+                <div class="pf-mini-stats">
+                    <div><span>Programas</span><strong>-</strong></div>
+                    <div><span>Fichas</span><strong>-</strong></div>
+                    <div><span>Matriz</span><strong>-</strong></div>
+                </div>
+
+                <div class="pf-contact-icons">
+                    <span><img src="{% static 'icons/magnifer-svgrepo-com.svg' %}" alt=""></span>
+                    <span><img src="{% static 'icons/user-circle-svgrepo-com.svg' %}" alt=""></span>
+                </div>
+            </section>
+            {% endwith %}
+
+            <section class="pf-panel">
+                <h2>Sobre mi</h2>
+                <p>Este panel resume tu informacion basica dentro del Sistema de Gestion CIDE.</p>
+                <div class="pf-about-grid">
+                    <div>
+                        <span>Nombre completo</span>
+                        <strong>{{ request.user.get_full_name|default:request.user.get_username }}</strong>
+                    </div>
+                    <div>
+                        <span>Documento</span>
+                        <strong>
+                            {% if contractor %}{{ contractor.document_number|default:"Sin documento" }}
+                            {% elif plant %}{{ plant.document_number|default:"Sin documento" }}
+                            {% else %}Sin documento registrado{% endif %}
+                        </strong>
+                    </div>
+                    <div>
+                        <span>Correo electronico</span>
+                        <strong>{{ request.user.email|default:"Sin correo" }}</strong>
+                    </div>
+                    <div>
+                        <span>Rol en el sistema</span>
+                        <strong class="pf-pill">
+                            {% if request.user.is_superuser or request.user.is_staff %}Administrador{% elif contractor %}Contratista{% elif plant %}Planta{% else %}Usuario{% endif %}
+                        </strong>
+                    </div>
+                </div>
+            </section>
+
+            <section class="pf-panel">
+                <h2>Editar perfil</h2>
+                <form method="post" action="{% url 'profile' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="info">
+                    <div class="pf-grid">
+                        <div class="pf-field">
+                            <label for="pf-fname">Nombre(s)</label>
+                            <input type="text" id="pf-fname" name="first_name" value="{{ request.user.first_name }}" maxlength="150" autocomplete="given-name">
+                        </div>
+                        <div class="pf-field">
+                            <label for="pf-lname">Apellido(s)</label>
+                            <input type="text" id="pf-lname" name="last_name" value="{{ request.user.last_name }}" maxlength="150" autocomplete="family-name">
+                        </div>
+                        <div class="pf-field pf-grid--full">
+                            <label for="pf-email">Correo electronico</label>
+                            <input type="email" id="pf-email" name="email" value="{{ request.user.email|default:'' }}" maxlength="254" autocomplete="email">
+                        </div>
+                        <div class="pf-field pf-field--readonly">
+                            <label>Usuario del sistema</label>
+                            <input type="text" value="{{ request.user.get_username }}" readonly>
+                        </div>
+                        <div class="pf-field pf-field--readonly">
+                            <label>Ultimo acceso</label>
+                            <input type="text" value="{{ last_login_display }}" readonly>
+                        </div>
+                    </div>
+                    <div class="pf-actions">
+                        <button type="submit" class="pf-btn pf-btn--primary">Guardar cambios</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="pf-panel">
+                <h2>Seguridad</h2>
+                <form method="post" action="{% url 'profile' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="password">
+                    <div class="pf-grid">
+                        <div class="pf-field pf-grid--full">
+                            <label for="pf-pass-cur">Contrasena actual</label>
+                            <div class="pf-pass-wrap">
+                                <input type="password" id="pf-pass-cur" name="current_password" autocomplete="current-password">
+                                <button type="button" class="pf-eye-btn" data-target="pf-pass-cur" aria-label="Mostrar/ocultar">
+                                    <img src="{% static 'icons/eye-svgrepo-com.svg' %}" alt="ver">
+                                </button>
+                            </div>
+                        </div>
+                        <div class="pf-field">
+                            <label for="pf-pass-new">Nueva contrasena</label>
+                            <div class="pf-pass-wrap">
+                                <input type="password" id="pf-pass-new" name="new_password" minlength="8" autocomplete="new-password">
+                                <button type="button" class="pf-eye-btn" data-target="pf-pass-new" aria-label="Mostrar/ocultar">
+                                    <img src="{% static 'icons/eye-svgrepo-com.svg' %}" alt="ver">
+                                </button>
+                            </div>
+                        </div>
+                        <div class="pf-field">
+                            <label for="pf-pass-conf">Confirmar nueva contrasena</label>
+                            <div class="pf-pass-wrap">
+                                <input type="password" id="pf-pass-conf" name="confirm_password" minlength="8" autocomplete="new-password">
+                                <button type="button" class="pf-eye-btn" data-target="pf-pass-conf" aria-label="Mostrar/ocultar">
+                                    <img src="{% static 'icons/eye-svgrepo-com.svg' %}" alt="ver">
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pf-actions">
+                        <button type="submit" class="pf-btn pf-btn--primary">Actualizar contrasena</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="pf-panel">
+                <h2>Areas y accesos</h2>
+                <p>Funciones a las que tienes acceso dentro del CIDE.</p>
+                <div class="pf-tags">
+                    <span>Dashboard</span>
+                    <span>Matriz de programas</span>
+                    <span>Fichas de formacion</span>
+                    <span>Sedes y ambientes</span>
+                    <span>Gestion de usuarios</span>
+                    <span>Cargas masivas</span>
+                </div>
+            </section>
+
+            <section class="pf-panel">
+                <h2>Sesion</h2>
+                <p>Cierra sesion en este dispositivo de forma segura.</p>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button class="pf-btn pf-btn--danger" type="submit">Cerrar sesion</button>
+                </form>
+            </section>
+        </div>
+    </main>
+
+    <nav class="navigation" aria-label="Navegacion principal">
+        <ul>
+            <li class="list {% if active_tab == 'inicio' %}active{% endif %}">
+                <a href="{% url 'dashboard' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/home-smile-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Inicio</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/magnifer-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Buscar</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'crear' %}active{% endif %}">
+                <a href="{% url 'matrix-upload' %}" data-spa="true" data-fab-toggle="true" aria-expanded="false">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/add-circle-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Cargar</span>
+                </a>
+            </li>
+            <li class="list">
+                <a href="#">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/bell-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Alertas</span>
+                </a>
+            </li>
+            <li class="list {% if active_tab == 'perfil' %}active{% endif %}">
+                <a href="{% url 'profile' %}" data-spa="true">
+                    <span class="icon" aria-hidden="true">
+                        <img src="{% static 'icons/user-circle-svgrepo-com.svg' %}" alt="">
+                    </span>
+                    <span class="text">Perfil</span>
+                </a>
+            </li>
+            <div class="indicator"></div>
+        </ul>
+    </nav>
+
+    <script>
+    (function () {
+        document.querySelectorAll('.pf-eye-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var targetId = btn.getAttribute('data-target');
+                var input = document.getElementById(targetId);
+                if (!input) return;
+                var isPass = input.type === 'password';
+                input.type = isPass ? 'text' : 'password';
+                var img = btn.querySelector('img');
+                img.src = isPass
+                    ? "{% static 'icons/eye-closed-svgrepo-com.svg' %}"
+                    : "{% static 'icons/eye-svgrepo-com.svg' %}";
+            });
+        });
+
+        var avatarTrigger = document.getElementById('pf-avatar-trigger');
+        var avatarInput = document.getElementById('pf-avatar-input');
+        var avatarForm = document.getElementById('pf-avatar-form');
+        if (avatarTrigger && avatarInput && avatarForm) {
+            avatarTrigger.addEventListener('click', function () {
+                avatarInput.click();
+            });
+
+            avatarInput.addEventListener('change', function () {
+                if (!avatarInput.files || !avatarInput.files.length) return;
+                avatarForm.submit();
+            });
+        }
+
+        document.querySelectorAll('.pf-flash').forEach(function (el) {
+            setTimeout(function () {
+                el.style.transition = 'opacity 0.4s';
+                el.style.opacity = '0';
+                setTimeout(function () { el.remove(); }, 420);
+            }, 4000);
+        });
+    }());
+    </script>
+</body>
+</html>
+
