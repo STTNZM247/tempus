@@ -17,7 +17,7 @@
         <img src="{% static 'icons/logo-sena.svg' %}" alt="Logo SENA">
     </div>
 
-    <main class="dashboard-shell">
+    <main class="dashboard-shell fi-config-shell">
         <header class="hero fi-hero fi-hero--create">
             <div>
                 <p class="eyebrow">Programacion</p>
@@ -61,7 +61,28 @@
                 </div>
             </article>
 
-            <!-- ====== CARRUSEL: RAPs + Instructores ====== -->
+            <div class="fi-carousel-shortcuts" aria-label="Atajos de paneles">
+                <div class="fi-carousel-shortcut-item">
+                    <button type="button" class="fi-carousel-shortcut-btn" id="quickRap" aria-label="Ir a RAPs">
+                        <img src="{% static 'icons/diploma-verified-svgrepo-com.svg' %}" alt="">
+                    </button>
+                    <span>RAPs</span>
+                </div>
+                <div class="fi-carousel-shortcut-item">
+                    <button type="button" class="fi-carousel-shortcut-btn" id="quickInst" aria-label="Ir a Instructores">
+                        <img src="{% static 'icons/user-plus-svgrepo-com.svg' %}" alt="">
+                    </button>
+                    <span>Instructores</span>
+                </div>
+                <div class="fi-carousel-shortcut-item">
+                    <button type="button" class="fi-carousel-shortcut-btn" id="quickAmb" aria-label="Ir a Ambientes">
+                        <img src="{% static 'icons/map-point-school-svgrepo-com.svg' %}" alt="">
+                    </button>
+                    <span>Ambientes</span>
+                </div>
+            </div>
+
+            <!-- ====== CARRUSEL: RAPs + Instructores + Ambientes ====== -->
             <div class="fi-carousel-wrap" id="fiCarousel">
 
                 <!-- Flecha izquierda -->
@@ -106,7 +127,9 @@
                                         {% for result in results %}
                                         <div class="fi-rap-item"
                                              data-trimester="{{ result.trimester }}"
-                                             data-search="{{ result.competency.code|lower }} {{ result.name|lower }}">
+                                             data-search="{{ result.competency.code|lower }} {{ result.name|lower }}"
+                                             data-rap-key="{{ result.competency.code }}-{{ result.trimester }}-{{ forloop.counter }}"
+                                             data-weekly-hours="{{ result.weekly_hours|default:'0' }}">
                                             <span class="fi-rap-comp-code">{{ result.competency.code }}</span>
                                             <span class="fi-rap-name">{{ result.name }}</span>
                                         </div>
@@ -196,6 +219,58 @@
                             </article>
                         </div>
 
+                        <!-- SLIDE 2: Ambientes -->
+                        <div class="fi-carousel-slide">
+                            <article class="fi-card fi-amb-card-wrap" aria-label="Ambientes">
+                                <div class="fi-rap-section">
+                                    <div class="fi-rap-header">
+                                        <h3 class="fi-rap-title">Ambientes</h3>
+                                        <span class="fi-rap-count" id="amb-count"></span>
+                                    </div>
+
+                                    <div class="fi-rap-controls">
+                                        <div class="fi-rap-filter" id="sedeFilter">
+                                            <div class="fi-rap-filter-trigger" id="sedeTrigger" tabindex="0" role="button" aria-haspopup="listbox" aria-expanded="false">
+                                                <span class="fi-rap-filter-label" id="sedeLabel">Todas las sedes</span>
+                                                <svg class="fi-rap-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                            </div>
+                                            <div class="fi-rap-filter-menu fi-rap-filter-menu--tall" id="sedeMenu" role="listbox">
+                                                <div class="fi-rap-filter-option fi-rap-filter-option--active" data-value="">Todas</div>
+                                                {% for sede in sedes_list %}
+                                                <div class="fi-rap-filter-option" data-value="{{ sede }}" title="{{ sede }}">{{ sede }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+
+                                        <div class="fi-rap-search-wrap">
+                                            <svg class="fi-rap-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                            <input class="fi-rap-search-input" id="ambSearch" type="text" placeholder="Buscar ambiente..." autocomplete="off" aria-label="Buscar ambiente">
+                                            <button class="fi-rap-search-clear" id="ambSearchClear" type="button" aria-label="Limpiar" style="display:none;">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="fi-amb-grid" id="ambGrid">
+                                        {% for amb in ambiences %}
+                                        <div class="fi-amb-item"
+                                             data-sede="{{ amb.sede }}"
+                                             data-search="{{ amb.sede|lower }} {{ amb.nombre|lower }} {{ amb.descripcion|lower }}"
+                                             data-ambiente-id="{{ amb.id }}">
+                                            <span class="fi-amb-sede" title="{{ amb.sede }}">{{ amb.sede }}</span>
+                                            <span class="fi-amb-name" title="{{ amb.nombre }}">{{ amb.nombre }}</span>
+                                            <span class="fi-amb-desc" title="{{ amb.descripcion }}">{{ amb.descripcion|default:"Sin descripcion" }}</span>
+                                        </div>
+                                        {% empty %}
+                                        <p class="fi-rap-empty">No hay ambientes registrados.</p>
+                                        {% endfor %}
+                                    </div>
+
+                                    <div class="fi-rap-no-results" id="ambNoResults" style="display:none;"><p>Sin ambientes para este filtro.</p></div>
+                                </div>
+                            </article>
+                        </div>
+
                     </div><!-- /track -->
                 </div><!-- /viewport -->
 
@@ -209,9 +284,36 @@
             <div class="fi-carousel-dots" id="carouselDots">
                 <button class="fi-carousel-dot fi-carousel-dot--active" data-index="0" type="button">RAPs</button>
                 <button class="fi-carousel-dot" data-index="1" type="button">Instructores</button>
+                <button class="fi-carousel-dot" data-index="2" type="button">Ambientes</button>
             </div>
 
         </section>
+
+    <!-- ====== DRAWER HORARIO (solo en configuración de ficha) ====== -->
+    <div class="fi-sched-drawer" id="schedDrawer" data-jornada="{{ ficha.jornada }}" data-ficha-id="{{ ficha.id }}">
+        <div class="fi-sched-handle" id="schedHandle">
+            <div class="fi-sched-handle-pill"></div>
+            <span class="fi-sched-handle-label">
+                Horario de programación
+                <small>Ficha {{ ficha.codigo }} · {{ ficha.matrix.program_name }}</small>
+            </span>
+            <button class="fi-sched-handle-toggle" id="schedToggle" type="button" aria-label="Expandir o minimizar horario">↓ doble clic en RAP / Instructor / Ambiente para programar</button>
+            <div class="fi-sched-handle-actions">
+                <button class="fi-sched-handle-btn fi-sched-handle-btn--cancel" id="schedCancel" type="button" aria-label="Cancelar y salir">
+                    Cancelar
+                </button>
+                <button class="fi-sched-handle-close" id="schedClose" type="button" aria-label="Cerrar horario">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="fi-sched-handle-minimized-icon" id="schedMinIcon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/><polyline points="16 2 16 8 22 8"/></svg>
+            </div>
+        </div>
+        <div class="fi-sched-body" id="schedBody">
+            <!-- Grilla semanal generada por JS -->
+        </div>
+    </div>
     </main>
 
     <!-- ====== MODAL DETALLE INSTRUCTOR ====== -->
@@ -266,6 +368,14 @@
         /* ============================================================
            UTILIDADES COMPARTIDAS
         ============================================================ */
+        /* Referencias al drawer de horario (definidas aquí para estar disponibles
+           en startFollowCursor que se declara más abajo) */
+        var schedDrawer  = document.getElementById("schedDrawer");
+        var schedBody    = document.getElementById("schedBody");
+        var schedClose   = document.getElementById("schedClose");
+        var schedHandle  = document.getElementById("schedHandle");
+        var schedToggle  = document.getElementById("schedToggle");
+
         function normalize(str) {
             if (!str) return "";
             return String(str)
@@ -386,6 +496,7 @@
             });
             if (rapNoResults) rapNoResults.style.display = (visible === 0 && items.length > 0) ? "" : "none";
             if (rapCount) rapCount.textContent = visible + " RAP" + (visible !== 1 ? "s" : "");
+            if (typeof syncCarouselHeight === "function") syncCarouselHeight();
         }
 
         initDivSelect("trimTrigger", "trimMenu", "trimLabel", "Todos los trimestres", function (val) {
@@ -437,6 +548,7 @@
             });
             if (instNoResults) instNoResults.style.display = (visible === 0 && items.length > 0) ? "" : "none";
             if (instCount) instCount.textContent = visible + " instructor" + (visible !== 1 ? "es" : "");
+            if (typeof syncCarouselHeight === "function") syncCarouselHeight();
         }
 
         initDivSelect("specTrigger", "specMenu", "specLabel", "Todas las especialidades", function (val) {
@@ -468,6 +580,60 @@
         applyInstFilters();
 
         /* ============================================================
+           PANEL 2: Ambientes
+        ============================================================ */
+        var ambActiveSede = "";
+        var ambSearchQuery = "";
+        var ambGrid = document.getElementById("ambGrid");
+        var ambNoResults = document.getElementById("ambNoResults");
+        var ambCount = document.getElementById("amb-count");
+
+        function applyAmbFilters() {
+            var items = ambGrid ? ambGrid.querySelectorAll(".fi-amb-item") : [];
+            var visible = 0;
+            items.forEach(function (item) {
+                var sedeOk = ambActiveSede === "" || normalize(item.dataset.sede) === normalize(ambActiveSede);
+                var searchOk = ambSearchQuery === "" || normalize(item.dataset.search).indexOf(normalize(ambSearchQuery)) !== -1;
+                var show = sedeOk && searchOk;
+                item.style.display = show ? "" : "none";
+                if (show) visible++;
+            });
+            if (ambNoResults) ambNoResults.style.display = (visible === 0 && items.length > 0) ? "" : "none";
+            if (ambCount) ambCount.textContent = visible + " ambiente" + (visible !== 1 ? "s" : "");
+            if (typeof syncCarouselHeight === "function") syncCarouselHeight();
+        }
+
+        initDivSelect("sedeTrigger", "sedeMenu", "sedeLabel", "Todas las sedes", function (val) {
+            ambActiveSede = val;
+            applyAmbFilters();
+        });
+        initSearchBar("ambSearch", "ambSearchClear", function (q) {
+            ambSearchQuery = q;
+            applyAmbFilters();
+        });
+
+        if (ambGrid) {
+            Sortable.create(ambGrid, {
+                animation: 150,
+                ghostClass: "fi-rap-ghost",
+                chosenClass: "fi-rap-chosen",
+                dragClass: "fi-rap-dragging",
+                filter: ".fi-rap-empty",
+                group: { name: "ambiences", pull: true, put: false },
+                forceFallback: true,
+                fallbackOnBody: true,
+            });
+            ambGrid.querySelectorAll(".fi-amb-item").forEach(function (item) {
+                item.addEventListener("dblclick", function (e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    startFollowCursor(item, "amb", e);
+                });
+            });
+        }
+        applyAmbFilters();
+
+        /* ============================================================
            CARRUSEL
         ============================================================ */
         /* Estado global para cursor follower */
@@ -496,7 +662,8 @@
             // Move item to body while following cursor to avoid clipping by carousel containers.
             document.body.appendChild(item);
 
-            item.classList.add(type === "rap" ? "fi-rap-locked" : "fi-inst-locked");
+            var lockClass = type === "rap" ? "fi-rap-locked" : (type === "inst" ? "fi-inst-locked" : "fi-amb-locked");
+            item.classList.add(lockClass);
             item.style.position = "fixed";
             item.style.left = event.clientX + "px";
             item.style.top = event.clientY + "px";
@@ -512,9 +679,22 @@
             document.body.style.cursor = "grabbing";
             document.body.style.userSelect = "none";
 
+            // Abrir drawer de horario
+            if (schedDrawer) {
+                schedDrawer.classList.remove("is-minimized");
+                schedDrawer.classList.add("is-open");
+            }
+
             function onMouseMove(e) {
                 item.style.left = e.clientX + "px";
                 item.style.top = e.clientY + "px";
+                // Resaltar celda bajo el cursor
+                var el = document.elementFromPoint(e.clientX, e.clientY);
+                var cellUnder = el ? el.closest(".fi-sched-cell") : null;
+                document.querySelectorAll(".fi-sched-cell.drag-over").forEach(function (c) {
+                    c.classList.remove("drag-over");
+                });
+                if (cellUnder && cellUnder.dataset.enabled === "1") cellUnder.classList.add("drag-over");
             }
 
             function onTouchMove(e) {
@@ -526,6 +706,21 @@
             }
 
             function onClick(e) {
+                // Detectar si el clic fue sobre una celda del horario
+                var el = document.elementFromPoint(e.clientX, e.clientY);
+                var targetCell = el ? el.closest(".fi-sched-cell") : null;
+                if (targetCell && targetCell.dataset.enabled === "1") {
+                    var chip = buildSchedChip(followingItem, followingType, targetCell.dataset.hours);
+                    var inner = targetCell.querySelector(".fi-sched-cell-inner");
+                    if (inner) {
+                        inner.appendChild(chip);
+                        updateRapHoursBadges();
+                        saveScheduleToServer();
+                    }
+                }
+                document.querySelectorAll(".fi-sched-cell.drag-over").forEach(function (c) {
+                    c.classList.remove("drag-over");
+                });
                 stopFollowCursor();
             }
 
@@ -552,7 +747,7 @@
                     }
                 }
 
-                followingItem.classList.remove("fi-rap-locked", "fi-inst-locked");
+                followingItem.classList.remove("fi-rap-locked", "fi-inst-locked", "fi-amb-locked");
                 followingItem.style.position = "";
                 followingItem.style.left = "";
                 followingItem.style.top = "";
@@ -578,11 +773,30 @@
         }
 
         var track      = document.getElementById("carouselTrack");
+        var viewport   = document.querySelector(".fi-carousel-viewport");
         var btnPrev    = document.getElementById("carouselPrev");
         var btnNext    = document.getElementById("carouselNext");
         var dots       = Array.from(document.querySelectorAll(".fi-carousel-dot"));
-        var totalSlides = 2;
+        var quickRap   = document.getElementById("quickRap");
+        var quickInst  = document.getElementById("quickInst");
+        var quickAmb   = document.getElementById("quickAmb");
+        var totalSlides = 3;
         var current    = 0;
+
+        function syncCarouselHeight() {
+            if (!track || !viewport) return;
+            var slide = track.children[current];
+            if (!slide) return;
+
+            // Usa la altura del contenido interno real (scrollHeight) y no la del
+            // contenedor del slide, porque ese contenedor puede conservar altura
+            // vieja y generar huecos blancos enormes.
+            var card = slide.firstElementChild;
+            var nextHeight = card ? Math.ceil(card.scrollHeight) : Math.ceil(slide.scrollHeight);
+            if (nextHeight > 0) {
+                viewport.style.height = nextHeight + "px";
+            }
+        }
 
         function goToSlide(n) {
             current = Math.max(0, Math.min(n, totalSlides - 1));
@@ -592,6 +806,7 @@
             dots.forEach(function (d, i) {
                 d.classList.toggle("fi-carousel-dot--active", i === current);
             });
+            syncCarouselHeight();
         }
 
         if (btnPrev) btnPrev.addEventListener("click", function () { goToSlide(current - 1); });
@@ -599,6 +814,10 @@
         dots.forEach(function (d) {
             d.addEventListener("click", function () { goToSlide(parseInt(d.dataset.index, 10)); });
         });
+        if (quickRap) quickRap.addEventListener("click", function () { goToSlide(0); });
+        if (quickInst) quickInst.addEventListener("click", function () { goToSlide(1); });
+        if (quickAmb) quickAmb.addEventListener("click", function () { goToSlide(2); });
+        window.addEventListener("resize", syncCarouselHeight);
         goToSlide(0);
 
         /* ============================================================
@@ -668,6 +887,444 @@
         document.addEventListener("keydown", function (e) {
             if (e.key === "Escape") closeModal();
         });
+
+        /* ============================================================
+           DRAWER DE HORARIO — configuración y lógica
+        ============================================================ */
+        (function () {
+            if (!schedDrawer || !schedBody) return;
+
+            var JORNADA = schedDrawer.dataset.jornada || "diurna";
+
+            var DAYS_MAP = {
+                "diurna":        ["Lunes","Martes","Miércoles","Jueves","Viernes"],
+                "mixta_18_22":   ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"],
+                "mixta_16_22":   ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"],
+                "fines_semana":  ["Viernes","Sábado","Domingo"]
+            };
+            var WEEKEND = ["Sábado","Domingo"];
+            var schedDays = DAYS_MAP[JORNADA] || DAYS_MAP["diurna"];
+
+            var TIME_SLOTS = [
+                { label: "07:00 – 11:00", hours: 4,  period: "mañana", pk: "manana" },
+                { label: "06:00 – 12:00", hours: 6,  period: "mañana", pk: "manana" },
+                { label: "12:00 – 18:00", hours: 6,  period: "tarde",  pk: "tarde"  },
+                { label: "12:00 – 16:00", hours: 4,  period: "tarde",  pk: "tarde"  },
+                { label: "13:00 – 17:00", hours: 4,  period: "tarde",  pk: "tarde"  },
+                { label: "16:00 – 22:00", hours: 6,  period: "noche",  pk: "noche"  },
+                { label: "18:00 – 22:00", hours: 4,  period: "noche",  pk: "noche"  }
+            ];
+
+            function isSlotAllowed(day, slot) {
+                if (JORNADA === "diurna") {
+                    return slot.pk !== "noche";
+                }
+                if (JORNADA === "mixta_18_22") {
+                    if (day === "Sábado") return true;
+                    return slot.label === "18:00 – 22:00";
+                }
+                if (JORNADA === "mixta_16_22") {
+                    if (day === "Sábado") return true;
+                    return slot.label === "16:00 – 22:00";
+                }
+                if (JORNADA === "fines_semana") {
+                    return true;
+                }
+                return true;
+            }
+
+            /* ---------- construir tabla ---------- */
+            function buildGrid() {
+                var wrap = document.createElement("div");
+                wrap.className = "fi-sched-table-wrap";
+
+                var table = document.createElement("table");
+                table.className = "fi-sched-table";
+
+                /* THEAD */
+                var thead = document.createElement("thead");
+                var headRow = document.createElement("tr");
+                var thCorner = document.createElement("th");
+                thCorner.className = "fi-sched-th-time fi-sched-th-corner";
+                thCorner.textContent = "Franja";
+                headRow.appendChild(thCorner);
+                schedDays.forEach(function (day) {
+                    var th = document.createElement("th");
+                    th.className = "fi-sched-th-day" + (WEEKEND.indexOf(day) !== -1 ? " is-weekend" : "");
+                    th.textContent = day;
+                    headRow.appendChild(th);
+                });
+                thead.appendChild(headRow);
+                table.appendChild(thead);
+
+                /* TBODY */
+                var tbody = document.createElement("tbody");
+                TIME_SLOTS.forEach(function (slot, si) {
+                    var tr = document.createElement("tr");
+
+                    var tdTime = document.createElement("td");
+                    tdTime.className = "fi-sched-time-cell";
+                    tdTime.innerHTML =
+                        '<span class="fi-sched-time-range">' + slot.label + '</span>' +
+                        '<span class="fi-sched-time-hours">' + slot.hours + ' h</span>' +
+                        '<span class="fi-sched-time-period fi-sched-time-period--' + slot.pk + '">' + slot.period + '</span>';
+                    tr.appendChild(tdTime);
+
+                    schedDays.forEach(function (day) {
+                        var allowed = isSlotAllowed(day, slot);
+                        var td = document.createElement("td");
+                        td.className = "fi-sched-cell" + (allowed ? "" : " fi-sched-cell--disabled");
+                        td.dataset.day   = day;
+                        td.dataset.slot  = si;
+                        td.dataset.hours = slot.hours;
+                        td.dataset.enabled = allowed ? "1" : "0";
+
+                        var inner = document.createElement("div");
+                        inner.className = "fi-sched-cell-inner";
+                        if (!allowed) {
+                            inner.innerHTML = '<span class="fi-sched-cell-blocked">No aplica</span>';
+                        }
+                        td.appendChild(inner);
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+                wrap.appendChild(table);
+                schedBody.innerHTML = "";
+                schedBody.appendChild(wrap);
+
+                /* Sortable dentro de celdas (reordenar chips entre celdas) */
+                schedBody.querySelectorAll(".fi-sched-cell-inner").forEach(function (inner) {
+                    if (inner.parentElement && inner.parentElement.dataset.enabled !== "1") return;
+                    Sortable.create(inner, {
+                        animation: 120,
+                        group:    { name: "schedule-chips", put: true },
+                        onSort:   function () {
+                            updateRapHoursBadges();
+                            saveScheduleToServer();
+                        }
+                    });
+                });
+            }
+
+            /* ---------- crear chip ---------- */
+            window.buildSchedChip = function (sourceItem, type, slotHours) {
+                var chip = document.createElement("div");
+                chip.className = "fi-sched-chip fi-sched-chip--" + type;
+                chip.dataset.type      = type;
+                chip.dataset.slotHours = parseFloat(slotHours) || 0;
+
+                var label = "", sub = "";
+
+                if (type === "rap") {
+                    chip.dataset.rapKey      = sourceItem.dataset.rapKey || "";
+                    chip.dataset.weeklyHours = sourceItem.dataset.weeklyHours || "0";
+                    var codeEl = sourceItem.querySelector(".fi-rap-comp-code");
+                    var nameEl = sourceItem.querySelector(".fi-rap-name");
+                    label = codeEl ? codeEl.textContent.trim() : "";
+                    sub   = nameEl ? nameEl.textContent.trim() : "";
+                } else if (type === "inst") {
+                    label = sourceItem.dataset.name || "Instructor";
+                    sub   = sourceItem.dataset.specialty || sourceItem.dataset.role || "";
+                    chip.dataset.instName = sourceItem.dataset.name || "";
+                    chip.dataset.instSpecialty = sourceItem.dataset.specialty || "";
+                } else {
+                    var nameEl2 = sourceItem.querySelector(".fi-amb-name");
+                    var sedeEl  = sourceItem.querySelector(".fi-amb-sede");
+                    label = nameEl2 ? nameEl2.textContent.trim() : "Ambiente";
+                    sub   = sedeEl  ? sedeEl.textContent.trim()  : "";
+                    chip.dataset.ambName = label;
+                    chip.dataset.ambSede = sub;
+                }
+
+                function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+                chip.innerHTML =
+                    '<span class="fi-sched-chip-label">' + esc(label) +
+                    (sub ? '<span class="fi-sched-chip-sub">' + esc(sub.substring(0,45)) + '</span>' : '') +
+                    '</span>' +
+                    '<button class="fi-sched-chip-remove" type="button" aria-label="Quitar" title="Quitar">×</button>';
+
+                chip.querySelector(".fi-sched-chip-remove").addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    chip.remove();
+                    updateRapHoursBadges();
+                    saveScheduleToServer();
+                });
+                return chip;
+            };
+
+            /* ---------- actualizar badges de horas en RAPs fuente ---------- */
+            window.updateRapHoursBadges = function () {
+                /* suma horas asignadas por rapKey */
+                var sums = {};
+                schedBody.querySelectorAll(".fi-sched-chip--rap").forEach(function (chip) {
+                    var key = chip.dataset.rapKey;
+                    if (!key) return;
+                    var cell = chip.closest(".fi-sched-cell");
+                    var h = cell ? (parseFloat(cell.dataset.hours) || 0) : 0;
+                    sums[key] = (sums[key] || 0) + h;
+                });
+
+                /* actualizar o crear badge en cada RAP de la fuente */
+                var rg = document.getElementById("rapGrid");
+                if (!rg) return;
+                rg.querySelectorAll(".fi-rap-item").forEach(function (item) {
+                    var key    = item.dataset.rapKey;
+                    var total  = parseFloat(item.dataset.weeklyHours) || 0;
+                    var assigned = sums[key] || 0;
+
+                    var badge = item.querySelector(".fi-rap-hours-badge");
+                    if (!badge) {
+                        badge = document.createElement("div");
+                        badge.className = "fi-rap-hours-badge";
+                        badge.innerHTML =
+                            '<span class="hb-text"></span>' +
+                            '<div class="hb-bar"><div class="hb-fill"></div></div>';
+                        item.appendChild(badge);
+                    }
+
+                    badge.querySelector(".hb-text").textContent = assigned + "/" + total + "h";
+                    var pct = total > 0 ? Math.min(100, (assigned / total) * 100) : 0;
+                    badge.querySelector(".hb-fill").style.width = pct + "%";
+                    badge.classList.toggle("is-full", total > 0 && assigned === total);
+                    badge.classList.toggle("is-over", total > 0 && assigned >  total);
+                });
+            };
+
+            /* ---------- serializar estado para caché ---------- */
+            function serializeScheduleState() {
+                var state = [];
+                schedBody.querySelectorAll(".fi-sched-cell").forEach(function (cell) {
+                    var day = cell.dataset.day;
+                    var slot = cell.dataset.slot;
+                    var inners = cell.querySelectorAll(".fi-sched-chip");
+                    inners.forEach(function (chip) {
+                        var entry = {
+                            day: day,
+                            slot: parseInt(slot),
+                            type: chip.dataset.type,
+                            label: chip.querySelector(".fi-sched-chip-label").textContent.trim()
+                        };
+                        if (chip.dataset.rapKey) {
+                            entry.rapKey = chip.dataset.rapKey;
+                            entry.weeklyHours = chip.dataset.weeklyHours;
+                        } else if (chip.dataset.type === "inst") {
+                            entry.instName = chip.dataset.instName || entry.label;
+                            entry.instSpecialty = chip.dataset.instSpecialty || "";
+                        } else if (chip.dataset.type === "amb") {
+                            entry.ambName = chip.dataset.ambName || entry.label;
+                            entry.ambSede = chip.dataset.ambSede || "";
+                        }
+                        state.push(entry);
+                    });
+                });
+                return JSON.stringify(state);
+            }
+
+            function saveScheduleToServer() {
+                var state = serializeScheduleState();
+                var fichId = schedDrawer.dataset.fichaId;
+                if (!fichId) return;
+                fetch("/fichas/" + fichId + "/save-schedule/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": (function () {
+                            var n = document.cookie.split("; ").find(function (c) { return c.startsWith("csrftoken="); });
+                            return n ? n.substring(10) : "";
+                        })()
+                    },
+                    body: JSON.stringify({ state: state })
+                }).catch(function (err) { console.warn("Fallo guardar horario:", err); });
+            }
+
+            function clearScheduleInUi() {
+                schedBody.querySelectorAll(".fi-sched-cell-inner").forEach(function (inner) {
+                    if (!inner.parentElement || inner.parentElement.dataset.enabled !== "1") return;
+                    inner.innerHTML = "";
+                });
+                updateRapHoursBadges();
+            }
+
+            function clearScheduleCacheOnServer() {
+                var fichId = schedDrawer.dataset.fichaId;
+                if (!fichId) return Promise.resolve();
+                return fetch("/fichas/" + fichId + "/clear-schedule/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": (function () {
+                            var n = document.cookie.split("; ").find(function (c) { return c.startsWith("csrftoken="); });
+                            return n ? n.substring(10) : "";
+                        })()
+                    }
+                });
+            }
+
+            function loadScheduleFromServer() {
+                var fichId = schedDrawer.dataset.fichaId;
+                if (!fichId) return;
+                fetch("/fichas/" + fichId + "/load-schedule/", {
+                    method: "GET",
+                    headers: { "Content-Type": "application/json" }
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data.state) return;
+                    var state = JSON.parse(data.state);
+                    if (!Array.isArray(state)) return;
+
+                    state.forEach(function (entry) {
+                        var cell = schedBody.querySelector(
+                            ".fi-sched-cell[data-day='" + entry.day + "'][data-slot='" + entry.slot + "']"
+                        );
+                        if (!cell || cell.dataset.enabled !== "1") return;
+
+                        var inner = cell.querySelector(".fi-sched-cell-inner");
+                        if (!inner) return;
+
+                        var chip = document.createElement("div");
+                        chip.className = "fi-sched-chip fi-sched-chip--" + entry.type;
+                        chip.dataset.type = entry.type;
+                        if (entry.rapKey) {
+                            chip.dataset.rapKey = entry.rapKey;
+                            chip.dataset.weeklyHours = entry.weeklyHours;
+                        } else if (entry.type === "inst") {
+                            chip.dataset.instName = entry.instName || "";
+                            chip.dataset.instSpecialty = entry.instSpecialty || "";
+                        } else if (entry.type === "amb") {
+                            chip.dataset.ambName = entry.ambName || "";
+                            chip.dataset.ambSede = entry.ambSede || "";
+                        }
+
+                        var label = entry.label || "";
+                        var sub = "";
+                        if (entry.type === "inst") {
+                            sub = entry.instSpecialty ? entry.instSpecialty.substring(0, 45) : "";
+                        } else if (entry.type === "amb") {
+                            sub = entry.ambSede ? entry.ambSede.substring(0, 45) : "";
+                        }
+
+                        function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+                        chip.innerHTML =
+                            '<span class="fi-sched-chip-label">' + esc(label) +
+                            (sub ? '<span class="fi-sched-chip-sub">' + esc(sub) + '</span>' : '') +
+                            '</span>' +
+                            '<button class="fi-sched-chip-remove" type="button" aria-label="Quitar" title="Quitar">×</button>';
+
+                        chip.querySelector(".fi-sched-chip-remove").addEventListener("click", function (e) {
+                            e.stopPropagation();
+                            chip.remove();
+                            updateRapHoursBadges();
+                            saveScheduleToServer();
+                        });
+
+                        inner.appendChild(chip);
+                    });
+                    updateRapHoursBadges();
+                })
+                .catch(function (err) { console.warn("Fallo cargar horario:", err); });
+            }
+
+            /* ---------- abrir / cerrar ---------- */
+            function openSched()  {
+                schedDrawer.classList.remove("is-minimized");
+                schedDrawer.classList.add("is-open");
+            }
+
+            function closeSched() {
+                schedDrawer.classList.remove("is-open");
+                schedDrawer.style.height = "";
+            }
+
+            function closeSchedWithAnimation() {
+                closeSched();
+                schedDrawer.classList.add("is-minimized");
+            }
+
+            var schedCancel = document.getElementById("schedCancel");
+
+            if (schedClose)  schedClose.addEventListener("click",  function (e) {
+                e.stopPropagation();
+                closeSchedWithAnimation();
+            });
+            if (schedCancel) schedCancel.addEventListener("click", function (e) {
+                e.stopPropagation();
+                clearScheduleInUi();
+                clearScheduleCacheOnServer().finally(function () {
+                    closeSchedWithAnimation();
+                });
+            });
+            if (schedToggle) schedToggle.addEventListener("click",  function (e) {
+                e.stopPropagation();
+                if (schedDrawer.classList.contains("is-minimized") || !schedDrawer.classList.contains("is-open")) {
+                    openSched();
+                } else {
+                    closeSchedWithAnimation();
+                }
+            });
+            if (schedHandle) schedHandle.addEventListener("click",  function (e) {
+                if (e.target.closest("#schedCancel") || e.target.closest("#schedClose") || e.target.closest("#schedToggle")) return;
+                if (schedDrawer.classList.contains("is-minimized")) {
+                    openSched();
+                }
+            });
+
+            /* ---------- scroll dentro del body = redimensionar ---------- */
+            schedBody.addEventListener("wheel", function (e) {
+                if (!schedDrawer.classList.contains("is-open")) return;
+
+                var wrap = schedBody.querySelector(".fi-sched-table-wrap");
+                if (!wrap) return;
+
+                var curH = schedDrawer.offsetHeight;
+                var minH = 56;
+                var maxH = Math.max(340, Math.min(window.innerHeight - 96, Math.round(window.innerHeight * 0.82)));
+
+                var delta = e.deltaY || 0;
+                if (Math.abs(delta) < 4) return;
+
+                // Sensibilidad dinámica: más respuesta con rueda/trackpad rápido.
+                var step = Math.max(64, Math.min(220, Math.round(Math.abs(delta) * 1.35)));
+
+                // Evita que el evento de rueda llegue al fondo/página.
+                e.preventDefault();
+                e.stopPropagation();
+
+                var canScrollUp = wrap.scrollTop > 0;
+                var canScrollDown = (wrap.scrollTop + wrap.clientHeight) < (wrap.scrollHeight - 1);
+
+                // Dirección UX solicitada:
+                // bajar rueda => expandir hacia arriba
+                // subir rueda => contraer (si el contenido ya está en el tope)
+                if (delta > 0) {
+                    if (curH < maxH) {
+                        var newH = Math.min(maxH, curH + step);
+                        schedDrawer.style.height = newH + "px";
+                    } else if (canScrollDown) {
+                        wrap.scrollTop += delta;
+                    }
+                } else {
+                    if (canScrollUp) {
+                        wrap.scrollTop += delta;
+                    } else {
+                        var newH2 = Math.max(minH, curH - step);
+                        schedDrawer.style.height = newH2 + "px";
+                        if (newH2 <= minH) {
+                            schedDrawer.classList.remove("is-open");
+                        }
+                    }
+                }
+            }, { passive: false });
+
+            /* ---------- inicializar ---------- */
+            buildGrid();
+            loadScheduleFromServer();
+
+        })(); /* fin IIFE scheduler */
 
     })();
     </script>

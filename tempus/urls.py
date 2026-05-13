@@ -19,10 +19,12 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
 from tempus.views import (
+    clear_schedule_view,
     dashboard_view,
     ficha_config_view,
     fichas_create_view,
     fichas_view,
+    load_schedule_view,
     login_view,
     logout_view,
     matrix_delete_view,
@@ -30,6 +32,7 @@ from tempus.views import (
     matrix_list_view,
     matrix_upload_view,
     profile_view,
+    save_schedule_view,
     sites_ambiences_view,
     users_delete_non_admin_view,
     users_plant_upload_template_view,
@@ -51,6 +54,9 @@ urlpatterns = [
     path('usuarios/cargar/planta/', users_plant_upload_view, name='users-upload-plant'),
     path('fichas/', fichas_view, name='fichas-panel'),
     path('fichas/<int:pk>/configurar/', ficha_config_view, name='ficha-config'),
+    path('fichas/<int:pk>/save-schedule/', save_schedule_view, name='save-schedule'),
+    path('fichas/<int:pk>/load-schedule/', load_schedule_view, name='load-schedule'),
+    path('fichas/<int:pk>/clear-schedule/', clear_schedule_view, name='clear-schedule'),
     path('fichas/crear/', fichas_create_view, name='fichas-create'),
     path('sedes-ambientes/', sites_ambiences_view, name='sites-ambiences'),
     path('matriz/cargar/', matrix_upload_view, name='matrix-upload'),

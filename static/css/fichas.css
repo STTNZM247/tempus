@@ -10,6 +10,19 @@
 .dashboard-shell:has(.fi-config-page) {
     width: min(1180px, calc(100vw - 72px));
     margin-inline: auto;
+    padding-bottom: 16px;
+}
+
+.dashboard-shell.fi-config-shell {
+    width: min(1180px, calc(100vw - 72px));
+    margin-inline: auto;
+    padding: 32px 0 calc(70px + 18px + 44px) !important;
+    min-height: 0 !important;
+}
+
+.dashboard-shell.fi-config-shell .fi-config-page {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
 }
 
 .fi-hero {
@@ -1091,6 +1104,55 @@ span.flatpickr-weekday {
     padding: 8px 0;
 }
 
+.fi-carousel-shortcuts {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 24px;
+    margin: 2px 0 8px;
+}
+
+.fi-carousel-shortcut-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.fi-carousel-shortcut-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1.5px solid #c7d9ed;
+    background: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+    padding: 0;
+}
+
+.fi-carousel-shortcut-btn img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
+.fi-carousel-shortcut-btn:hover {
+    border-color: #168536;
+    background: #eef6f1;
+    box-shadow: 0 3px 10px rgba(22,133,54,0.13);
+    transform: translateY(-1px);
+}
+
+.fi-carousel-shortcut-item span {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: #476487;
+}
+
 /* ===== CARRUSEL ===== */
 .fi-carousel-wrap {
     display: flex;
@@ -1131,6 +1193,7 @@ span.flatpickr-weekday {
     flex: 1;
     overflow: hidden;
     border-radius: 16px;
+    transition: height 0.22s ease;
 }
 
 .fi-carousel-track {
@@ -1359,6 +1422,92 @@ span.flatpickr-weekday {
     border-color: #168536;
 }
 
+/* ===== TARJETAS AMBIENTES ===== */
+.fi-amb-card-wrap {
+    border: 1px solid #d8e5f1;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.fi-amb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
+    gap: 10px;
+    min-height: 60px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.fi-amb-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 12px 10px;
+    background: #fff;
+    border: 1.5px solid #d2e3f2;
+    border-radius: 12px;
+    cursor: grab;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    user-select: none;
+    min-height: 84px;
+}
+
+.fi-amb-item:hover {
+    border-color: #168536;
+    box-shadow: 0 3px 14px rgba(22,133,54,0.10);
+}
+
+.fi-amb-item:active {
+    cursor: grabbing;
+}
+
+.fi-amb-sede {
+    display: inline-flex;
+    align-self: flex-start;
+    max-width: 100%;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #0f6a33;
+    background: #e8f5ed;
+    border: 1px solid #bfe4cc;
+    border-radius: 999px;
+    padding: 2px 8px;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fi-amb-name {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #15355d;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.fi-amb-desc {
+    font-size: 0.75rem;
+    color: #5f7392;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.fi-amb-locked {
+    border: 2px solid #0f7b76 !important;
+    background: #e6f6f5 !important;
+    box-shadow: inset 0 0 0 1px #0f7b76, 0 4px 12px rgba(15,123,118,0.16) !important;
+    cursor: pointer;
+}
+
 /* ===== MODAL INSTRUCTOR ===== */
 .fi-inst-modal-shell {
     position: fixed;
@@ -1471,6 +1620,490 @@ span.flatpickr-weekday {
 
 .fi-inst-modal-close:hover {
     background: #f3f7fb;
+}
+
+/* ============================================================
+   DRAWER DE HORARIO DE PROGRAMACIÓN
+============================================================ */
+.fi-sched-drawer {
+    position: fixed !important;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 800;
+    background: #fff;
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -6px 40px rgba(0, 0, 0, 0.14);
+    height: 56px;
+    transition: all 0.42s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(0) translateY(0);
+    opacity: 1;
+    width: 100%;
+}
+
+.fi-sched-drawer.is-open {
+    height: min(56vh, 620px);
+    opacity: 1;
+    width: 100%;
+}
+
+.fi-sched-drawer.is-minimized {
+    width: 72px;
+    height: 56px;
+    left: auto;
+    right: auto;
+    left: 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+    opacity: 0.95;
+}
+
+.fi-sched-drawer.is-minimized .fi-sched-handle-actions,
+.fi-sched-drawer.is-minimized .fi-sched-handle-label,
+.fi-sched-drawer.is-minimized .fi-sched-handle-toggle {
+    display: none;
+}
+
+.fi-sched-drawer.is-minimized .fi-sched-handle {
+    padding: 0;
+    justify-content: center;
+    align-items: center;
+}
+
+.fi-sched-drawer.is-minimized .fi-sched-handle-pill {
+    display: none;
+}
+
+.fi-sched-drawer.is-minimized .fi-sched-body {
+    display: none;
+}
+
+/* ---------- handle ---------- */
+.fi-sched-handle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 20px;
+    height: 56px;
+    min-height: 56px;
+    cursor: pointer;
+    background: #fff;
+    border-bottom: 1.5px solid #e6ecf4;
+    user-select: none;
+    flex-shrink: 0;
+    transition: all 0.42s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fi-sched-drawer.is-minimized .fi-sched-handle {
+    border-bottom: none;
+    padding: 0;
+    justify-content: center;
+    border-bottom: none;
+}
+
+.fi-sched-handle-pill {
+    width: 38px;
+    height: 4px;
+    background: #c8d3e0;
+    border-radius: 99px;
+    flex-shrink: 0;
+}
+
+.fi-sched-handle-minimized-icon {
+    width: 24px;
+    height: 24px;
+    color: #168536;
+    display: none;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+}
+
+.fi-sched-drawer.is-minimized .fi-sched-handle-minimized-icon {
+    display: flex;
+}
+
+.fi-sched-drawer.is-minimized .fi-sched-handle-minimized-icon svg {
+    stroke: #168536;
+    width: 28px;
+    height: 28px;
+}
+
+.fi-sched-handle-label {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #2d3a4a;
+    white-space: nowrap;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.12;
+}
+
+.fi-sched-handle-label small {
+    font-size: 0.64rem;
+    font-weight: 600;
+    color: #7d8ea5;
+}
+
+.fi-sched-handle-toggle {
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.72rem;
+    color: #8895a7;
+    flex: 1;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 4px 10px;
+    border-radius: 10px;
+    transition: all 0.16s;
+}
+
+.fi-sched-handle-toggle:hover {
+    color: #1e446b;
+    background: #f2f7fd;
+    border-color: #d7e4f3;
+}
+
+.fi-sched-handle-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.fi-sched-handle-btn {
+    font-size: 0.76rem;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    white-space: nowrap;
+}
+
+.fi-sched-handle-btn--cancel {
+    background: #fce8e8;
+    color: #c0392b;
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.9);
+}
+
+.fi-sched-drawer.is-open .fi-sched-handle-btn--cancel {
+    opacity: 1;
+    pointer-events: auto;
+    transform: scale(1);
+}
+
+.fi-sched-handle-btn--cancel:hover {
+    background: #fbbfbf;
+    color: #a02622;
+}
+
+.fi-sched-handle-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #8895a7;
+    padding: 5px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, background 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+
+.fi-sched-drawer.is-open .fi-sched-handle-close {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.fi-sched-handle-close:hover {
+    background: #fde8e8;
+    color: #c0392b;
+}
+
+/* ---------- body / tabla ---------- */
+.fi-sched-body {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.fi-sched-table-wrap {
+    overflow: auto;
+    flex: 1;
+    -webkit-overflow-scrolling: touch;
+}
+
+.fi-sched-table {
+    border-collapse: collapse;
+    width: max-content;
+    min-width: 100%;
+}
+
+.fi-sched-table th,
+.fi-sched-table td {
+    border: 1px solid #dde5ef;
+    vertical-align: top;
+    padding: 0;
+}
+
+/* Encabezado esquina */
+.fi-sched-th-corner {
+    width: 120px;
+    min-width: 120px;
+    background: #f0f4f9 !important;
+    position: sticky;
+    left: 0;
+    top: 0;
+    z-index: 4 !important;
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #5f7392;
+    padding: 8px 6px;
+}
+
+/* Encabezado días */
+.fi-sched-th-day {
+    width: 140px;
+    min-width: 140px;
+    background: var(--sena-green, #168536);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 8px 4px;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+}
+
+.fi-sched-th-day.is-weekend {
+    background: #0b5c2c;
+}
+
+/* Celda hora */
+.fi-sched-time-cell {
+    width: 120px;
+    min-width: 120px;
+    background: #f5f8fb;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    padding: 8px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.fi-sched-time-range {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #2d3a4a;
+    white-space: nowrap;
+}
+
+.fi-sched-time-hours {
+    display: block;
+    font-size: 0.65rem;
+    color: #8895a7;
+    margin-top: 2px;
+}
+
+.fi-sched-time-period {
+    display: inline-block;
+    font-size: 0.58rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 99px;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.fi-sched-time-period--manana {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.fi-sched-time-period--tarde {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.fi-sched-time-period--noche {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+/* ---------- celda drop zone ---------- */
+.fi-sched-cell {
+    vertical-align: top;
+    transition: background 0.12s;
+    min-width: 140px;
+    box-shadow: inset 0 0 0 1px #b9e4c3;
+}
+
+.fi-sched-cell--disabled {
+    background: #fdecec;
+    box-shadow: inset 0 0 0 1px #f3b9b9;
+}
+
+.fi-sched-cell--disabled .fi-sched-cell-inner {
+    min-height: 62px;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.fi-sched-cell-blocked {
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #b84a4a;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.fi-sched-cell.drag-over {
+    background: #e4f5ea !important;
+    outline: 2px dashed #168536;
+    outline-offset: -2px;
+}
+
+.fi-sched-cell-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-height: 62px;
+    padding: 4px;
+}
+
+/* ---------- chips en celdas ---------- */
+.fi-sched-chip {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-size: 0.67rem;
+    cursor: grab;
+    line-height: 1.3;
+}
+
+.fi-sched-chip:active { cursor: grabbing; }
+
+.fi-sched-chip--rap {
+    background: #e8f5ec;
+    border: 1px solid #a8d5b0;
+    color: #145a29;
+}
+
+.fi-sched-chip--inst {
+    background: #eff6ff;
+    border: 1px solid #93c5fd;
+    color: #1e3a5f;
+}
+
+.fi-sched-chip--amb {
+    background: #fff7ed;
+    border: 1px solid #fbbf7a;
+    color: #7c3b0a;
+}
+
+.fi-sched-chip-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 700;
+}
+
+.fi-sched-chip-sub {
+    display: block;
+    font-size: 0.58rem;
+    font-weight: 400;
+    opacity: 0.75;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fi-sched-chip-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.45;
+    padding: 0 1px;
+    font-size: 1rem;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: -1px;
+    transition: opacity 0.12s;
+}
+
+.fi-sched-chip-remove:hover { opacity: 1; }
+
+/* ---------- badge de horas en RAPs fuente ---------- */
+.fi-rap-hours-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 5px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #5f7392;
+}
+
+.fi-rap-hours-badge .hb-text {
+    white-space: nowrap;
+    min-width: 36px;
+}
+
+.fi-rap-hours-badge .hb-bar {
+    flex: 1;
+    height: 4px;
+    background: #e0e7ef;
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.fi-rap-hours-badge .hb-fill {
+    height: 100%;
+    background: #168536;
+    border-radius: 99px;
+    transition: width 0.3s;
+}
+
+.fi-rap-hours-badge.is-full .hb-fill {
+    background: #168536;
+}
+
+.fi-rap-hours-badge.is-over .hb-fill {
+    background: #dc2626;
+}
+
+.fi-rap-hours-badge.is-over .hb-text {
+    color: #dc2626;
+}
+
+/* ---------- espacio inferior para que el drawer no tape contenido ---------- */
+.fi-config-page {
+    padding-bottom: 0;
 }
 
 .fi-inst-modal-body {
@@ -1638,6 +2271,12 @@ span.flatpickr-weekday {
 
     .dashboard-shell:has(.fi-config-page) {
         width: min(1160px, calc(100vw - 44px));
+        padding-bottom: 14px;
+    }
+
+    .dashboard-shell.fi-config-shell {
+        width: min(1160px, calc(100vw - 44px));
+        padding: 32px 0 calc(70px + 16px + 42px) !important;
     }
 
     .fi-schedule-grid {
@@ -1656,6 +2295,12 @@ span.flatpickr-weekday {
 
     .dashboard-shell:has(.fi-config-page) {
         width: min(100%, calc(100vw - 28px));
+        padding-bottom: 12px;
+    }
+
+    .dashboard-shell.fi-config-shell {
+        width: min(100%, calc(100vw - 28px));
+        padding: 32px 0 calc(70px + 14px + 40px) !important;
     }
 
     .fi-schedule-grid {
@@ -1696,6 +2341,21 @@ span.flatpickr-weekday {
 
     .fi-schedule-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .fi-carousel-shortcuts {
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    .fi-carousel-shortcut-btn {
+        width: 38px;
+        height: 38px;
+    }
+
+    .fi-carousel-shortcut-btn img {
+        width: 18px;
+        height: 18px;
     }
 }
 

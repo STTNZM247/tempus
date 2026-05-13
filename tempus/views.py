@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from datetime import date as dt_date
 from django.utils import timezone
@@ -9,6 +9,7 @@ from django.utils.formats import date_format
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods, require_POST
 from io import BytesIO
+import json
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -846,13 +847,37 @@ def ficha_config_view(request, pk):
 
     ficha = get_object_or_404(Ficha.objects.select_related("matrix", "created_by"), pk=pk)
 
-    results = (
+    raw_results = list(
         MatrixResult.objects
         .filter(competency__matrix=ficha.matrix)
         .select_related("competency")
         .order_by("trimester", "competency__display_order", "display_order")
     )
-    trimestres = sorted(set(r.trimester for r in results if r.trimester is not None))
+
+    cdf_limit = ficha.cdf_trimestres if ficha.cdf_trimestres else None
+    results = []
+    for result in raw_results:
+        if not cdf_limit:
+            results.append(result)
+            continue
+
+        try:
+            trimester_value = int(result.trimester)
+        except (TypeError, ValueError):
+            # Keep non-numeric rows visible instead of silently dropping them.
+            results.append(result)
+            continue
+
+        if trimester_value <= cdf_limit:
+            results.append(result)
+
+    trimestres = sorted(
+        {
+            int(r.trimester)
+            for r in results
+            if r.trimester is not None and str(r.trimester).isdigit()
+        }
+    )
 
     # Build unified instructor list (Planta + Contratista)
     instructors = []
@@ -905,6 +930,19 @@ def ficha_config_view(request, pk):
                 specialties_list.append(sp)
     specialties_list.sort(key=str.lower)
 
+    ambiences = []
+    for ambiente in Ambiente.objects.select_related("sede").order_by("sede__nombre", "nombre"):
+        ambiences.append(
+            {
+                "id": ambiente.id,
+                "sede": ambiente.sede.nombre,
+                "nombre": ambiente.nombre,
+                "descripcion": (ambiente.descripcion or "").strip(),
+            }
+        )
+
+    sedes_list = sorted({a["sede"] for a in ambiences}, key=str.lower)
+
     return render(
         request,
         "ficha_config.html",
@@ -915,8 +953,65 @@ def ficha_config_view(request, pk):
             "trimestres": trimestres,
             "instructors": instructors,
             "specialties_list": specialties_list,
+            "ambiences": ambiences,
+            "sedes_list": sedes_list,
         },
     )
+
+
+@login_required
+@require_http_methods(["POST"])
+def save_schedule_view(request, pk):
+    """Guardar estado del horario en BD (caché)"""
+    if not _is_admin(request.user):
+        return JsonResponse({"error": "Sin permisos"}, status=403)
+    try:
+        ficha = Ficha.objects.get(pk=pk)
+        data = json.loads(request.body)
+        state_str = data.get("state", "[]")
+        state = json.loads(state_str) if isinstance(state_str, str) else state_str
+        ficha.schedule_state = state
+        ficha.save(update_fields=["schedule_state", "updated_at"])
+        return JsonResponse({"ok": True})
+    except Ficha.DoesNotExist:
+        return JsonResponse({"error": "Ficha no encontrada"}, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "JSON inválido"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def load_schedule_view(request, pk):
+    """Cargar estado del horario desde BD (caché)"""
+    if not _is_admin(request.user):
+        return JsonResponse({"error": "Sin permisos"}, status=403)
+    try:
+        ficha = Ficha.objects.get(pk=pk)
+        state = ficha.schedule_state or []
+        return JsonResponse({"state": json.dumps(state)})
+    except Ficha.DoesNotExist:
+        return JsonResponse({"error": "Ficha no encontrada"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def clear_schedule_view(request, pk):
+    """Limpiar caché del horario de la ficha"""
+    if not _is_admin(request.user):
+        return JsonResponse({"error": "Sin permisos"}, status=403)
+    try:
+        ficha = Ficha.objects.get(pk=pk)
+        ficha.schedule_state = []
+        ficha.save(update_fields=["schedule_state", "updated_at"])
+        return JsonResponse({"ok": True})
+    except Ficha.DoesNotExist:
+        return JsonResponse({"error": "Ficha no encontrada"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 @never_cache
@@ -1000,10 +1095,10 @@ def fichas_create_view(request):
                 messages.error(request, "Debes ingresar fechas lectivas validas.")
             elif fecha_fin < fecha_inicio:
                 messages.error(request, "La fecha fin lectiva no puede ser menor a la fecha inicio.")
-            elif cdf_trimestres and matrix_max_trimester != int(cdf_trimestres):
+            elif cdf_trimestres and matrix_max_trimester < int(cdf_trimestres):
                 messages.error(
                     request,
-                    "El programa seleccionado no coincide con el CDF elegido (5 o 6 trimestres).",
+                    "El programa seleccionado tiene menos trimestres que el CDF elegido.",
                 )
             else:
                 cdf_value = int(cdf_trimestres) if cdf_trimestres else None

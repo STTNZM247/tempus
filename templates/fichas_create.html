@@ -368,10 +368,12 @@
                 var selectedOptionStillVisible = false;
                 var firstVisibleOption = null;
                 var selectedOption = selectedId ? custom.querySelector('.fi-option[data-value="' + selectedId + '"]') : null;
+                var cdfNumber = parseInt(cdfValue || '0', 10);
 
                 custom.querySelectorAll('.fi-option').forEach(function (option) {
                     var maxTrimester = option.getAttribute('data-max-trimester') || '0';
-                    var isVisible = !cdfValue || maxTrimester === cdfValue;
+                    var maxTrimesterNumber = parseInt(maxTrimester || '0', 10);
+                    var isVisible = !cdfValue || (maxTrimesterNumber >= cdfNumber);
                     option.style.display = isVisible ? '' : 'none';
 
                     if (isVisible && !firstVisibleOption) {
@@ -404,9 +406,9 @@
                 if (!cdfValue) {
                     cdfHelp.textContent = 'Selecciona CDF para filtrar programas por 5 o 6 trimestres.';
                 } else if (!firstVisibleOption) {
-                    cdfHelp.textContent = 'No hay programas con ' + cdfValue + ' trimestres. Se mantiene la seleccion actual.';
+                    cdfHelp.textContent = 'No hay programas con al menos ' + cdfValue + ' trimestres. Se mantiene la seleccion actual.';
                 } else {
-                    cdfHelp.textContent = 'Mostrando programas con ' + cdfValue + ' trimestres segun matriz.';
+                    cdfHelp.textContent = 'Mostrando programas con al menos ' + cdfValue + ' trimestres segun matriz.';
                 }
             }
 

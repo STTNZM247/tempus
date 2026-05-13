@@ -141,6 +141,7 @@ class Ficha(models.Model):
     jornada = models.CharField(max_length=20, choices=JORNADA_CHOICES, default=JORNADA_DIURNA)
     fecha_inicio_lectiva = models.DateField(null=True, blank=True)
     fecha_fin_lectiva = models.DateField(null=True, blank=True)
+    schedule_state = models.JSONField(default=list, blank=True, help_text="Estado del horario de programación (caché)")
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
